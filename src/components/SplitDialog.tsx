@@ -14,6 +14,7 @@ import {
 import { Button } from '~/components/ui/button'
 import { Label } from '~/components/ui/label'
 import { Input } from '~/components/ui/input'
+import { Scissors } from 'lucide-react'
 
 interface SplitDialogProps {
   lap: LapHandle
@@ -39,6 +40,9 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
   const firstDistance = calculateDistance(firstHalf)
   const secondDistance = lap.stats.distance - firstDistance
 
+  // Visual split ratio for the bar
+  const ratio = lap.stats.distance > 0 ? firstDistance / lap.stats.distance : 0.5
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
@@ -49,9 +53,11 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="split-point">Split at point</Label>
+            <Label htmlFor="split-point" className="text-xs uppercase tracking-wider text-muted-foreground">
+              Split at point
+            </Label>
             <div className="flex items-center gap-3">
               <Input
                 id="split-point"
@@ -60,24 +66,36 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
                 max={maxIndex - 1}
                 value={splitIndex}
                 onChange={(e) => setSplitIndex(Number(e.target.value))}
-                className="flex-1"
+                className="flex-1 accent-primary"
               />
-              <span className="text-sm font-mono w-20 text-right">
+              <span className="text-sm tabular-nums font-medium w-20 text-right text-muted-foreground">
                 {splitIndex} / {maxIndex}
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="p-3 rounded-md bg-muted">
-              <p className="font-medium">First half</p>
-              <p className="text-muted-foreground">{firstHalf.length} points</p>
-              <p className="text-muted-foreground">{formatDistance(firstDistance)}</p>
+          {/* Visual split bar */}
+          <div className="h-2 rounded-full bg-muted overflow-hidden flex">
+            <div
+              className="h-full bg-primary/70 transition-all duration-150 rounded-l-full"
+              style={{ width: `${ratio * 100}%` }}
+            />
+            <div
+              className="h-full bg-primary/30 transition-all duration-150 rounded-r-full"
+              style={{ width: `${(1 - ratio) * 100}%` }}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="p-3 rounded-lg bg-muted/60 border border-border/40 space-y-1">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">First half</p>
+              <p className="font-medium tabular-nums">{formatDistance(firstDistance)}</p>
+              <p className="text-xs text-muted-foreground tabular-nums">{firstHalf.length} points</p>
             </div>
-            <div className="p-3 rounded-md bg-muted">
-              <p className="font-medium">Second half</p>
-              <p className="text-muted-foreground">{secondHalf.length} points</p>
-              <p className="text-muted-foreground">{formatDistance(secondDistance)}</p>
+            <div className="p-3 rounded-lg bg-muted/60 border border-border/40 space-y-1">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Second half</p>
+              <p className="font-medium tabular-nums">{formatDistance(secondDistance)}</p>
+              <p className="text-xs text-muted-foreground tabular-nums">{secondHalf.length} points</p>
             </div>
           </div>
         </div>
@@ -86,7 +104,10 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={() => onSplit(splitIndex)}>Split</Button>
+          <Button onClick={() => onSplit(splitIndex)}>
+            <Scissors className="size-3.5" />
+            Split
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

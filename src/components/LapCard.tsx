@@ -4,7 +4,6 @@ import { formatDistance, formatDuration, formatPace, formatSpeed } from '~/utils
 import { Card, CardContent } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
-import { Badge } from '~/components/ui/badge'
 import { Separator } from '~/components/ui/separator'
 import {
   AlertDialog,
@@ -53,9 +52,9 @@ interface LapCardProps {
 function Stat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
     <div className="flex items-center gap-1.5 text-sm">
-      <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+      <Icon className="size-3.5 text-warm-400 shrink-0" strokeWidth={1.5} />
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <span className="font-medium tabular-nums">{value}</span>
     </div>
   )
 }
@@ -90,20 +89,20 @@ export function LapCard({
   }
 
   return (
-    <Card>
+    <Card className="border-border/60 bg-card/80">
       <CardContent className="py-3 space-y-2">
         {/* Header: reorder, badge, name, actions */}
         <div className="flex items-center gap-3">
           <div className="flex flex-col gap-0.5">
-            <Button variant="ghost" size="icon" className="h-6 w-6" disabled={isFirst} onClick={onMoveUp}>
-              <ChevronUp className="h-4 w-4" />
+            <Button variant="ghost" size="icon-xs" disabled={isFirst} onClick={onMoveUp}>
+              <ChevronUp className="size-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6" disabled={isLast} onClick={onMoveDown}>
-              <ChevronDown className="h-4 w-4" />
+            <Button variant="ghost" size="icon-xs" disabled={isLast} onClick={onMoveDown}>
+              <ChevronDown className="size-3.5" />
             </Button>
           </div>
 
-          <Badge variant="secondary" className="shrink-0">{index + 1}</Badge>
+          <span className="text-xs tabular-nums text-muted-foreground font-medium shrink-0 w-5 text-center">{index + 1}</span>
 
           <div className="flex-1 min-w-0">
             {isEditing ? (
@@ -118,11 +117,11 @@ export function LapCard({
                   className="h-7 text-sm"
                   autoFocus
                 />
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleSaveRename}>
-                  <Check className="h-3.5 w-3.5" />
+                <Button variant="ghost" size="icon-xs" onClick={handleSaveRename}>
+                  <Check className="size-3" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleCancelRename}>
-                  <X className="h-3.5 w-3.5" />
+                <Button variant="ghost" size="icon-xs" onClick={handleCancelRename}>
+                  <X className="size-3" />
                 </Button>
               </div>
             ) : (
@@ -130,28 +129,27 @@ export function LapCard({
                 <span className="font-medium truncate">{lap.name}</span>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 shrink-0"
+                  size="icon-xs"
                   onClick={() => { setEditName(lap.name); setIsEditing(true) }}
                 >
-                  <Pencil className="h-3 w-3" />
+                  <Pencil className="size-2.5" />
                 </Button>
               </div>
             )}
           </div>
 
-          <div className="flex gap-1 shrink-0">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onSplit} title="Split lap" disabled={lap.pointCount < 3}>
-              <Scissors className="h-4 w-4" />
+          <div className="flex gap-0.5 shrink-0">
+            <Button variant="ghost" size="icon-xs" onClick={onSplit} title="Split lap" disabled={lap.pointCount < 3}>
+              <Scissors className="size-3.5" />
             </Button>
             {canMergeNext && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMergeNext} title="Merge with next lap">
-                <Merge className="h-4 w-4" />
+              <Button variant="ghost" size="icon-xs" onClick={onMergeNext} title="Merge with next lap">
+                <Merge className="size-3.5" />
               </Button>
             )}
             <AlertDialog>
-              <AlertDialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete lap" />}>
-                  <Trash2 className="h-4 w-4" />
+              <AlertDialogTrigger render={<Button variant="ghost" size="icon-xs" className="text-destructive hover:text-destructive" title="Delete lap" />}>
+                  <Trash2 className="size-3.5" />
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -169,7 +167,7 @@ export function LapCard({
           </div>
         </div>
 
-        <Separator />
+        <Separator className="bg-border/40" />
 
         {/* Stats grid */}
         <div className="flex flex-wrap gap-x-6 gap-y-1.5 pl-9">
@@ -200,7 +198,7 @@ export function LapCard({
           {stats.elevationLoss !== undefined && (
             <Stat icon={TrendingDown} label="Elev -" value={`${stats.elevationLoss} m`} />
           )}
-          <span className="text-xs text-muted-foreground self-center">{lap.pointCount} pts</span>
+          <span className="text-xs text-muted-foreground self-center tabular-nums">{lap.pointCount} pts</span>
         </div>
       </CardContent>
     </Card>

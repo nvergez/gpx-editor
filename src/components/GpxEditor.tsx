@@ -33,7 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import { Download, RotateCcw, ChevronDown, Info, X } from 'lucide-react'
+import { Download, RotateCcw, ChevronDown, Info, X, FileDown } from 'lucide-react'
 
 function downloadFile(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType })
@@ -179,40 +179,46 @@ export function GpxEditor() {
   return (
     <div className="space-y-6">
       {showGpxHint && (
-        <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
-          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+        <div className="flex items-start gap-3 rounded-xl border border-chart-3/30 bg-chart-3/5 p-4 text-sm text-foreground">
+          <Info className="mt-0.5 size-4 shrink-0 text-chart-3" />
           <div className="flex-1">
             <p className="font-medium">Only 1 lap detected</p>
-            <p className="mt-0.5 text-blue-700 dark:text-blue-300">
+            <p className="mt-0.5 text-muted-foreground">
               GPX files often merge all laps into a single track. If your activity has multiple laps, try importing the TCX version instead to preserve lap data.
             </p>
           </div>
           <button
             onClick={() => setShowGpxHint(false)}
-            className="shrink-0 rounded p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800"
+            className="shrink-0 rounded-md p-1 hover:bg-muted transition-colors"
           >
-            <X className="h-4 w-4" />
+            <X className="size-3.5" />
           </button>
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{actDoc.name}</h2>
+      {/* Activity header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            {actDoc.sourceFormat.toUpperCase()} Activity
+          </p>
+          <h2 className="font-serif text-2xl sm:text-3xl tracking-tight text-foreground leading-tight">
+            {actDoc.name}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            {laps.length} lap(s)
+            {laps.length} lap{laps.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleReset}>
-            <RotateCcw className="mr-2 h-4 w-4" />
+        <div className="flex gap-2 shrink-0">
+          <Button variant="ghost" onClick={handleReset} size="sm">
+            <RotateCcw className="size-3.5" />
             New file
           </Button>
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button />}>
-                <Download className="mr-2 h-4 w-4" />
+            <DropdownMenuTrigger render={<Button size="sm" />}>
+                <FileDown className="size-3.5" />
                 Export
-                <ChevronDown className="ml-2 h-4 w-4" />
+                <ChevronDown className="size-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleExportOriginal}>

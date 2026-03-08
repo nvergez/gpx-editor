@@ -66,16 +66,16 @@ function SortableHeader({ label, column }: { label: string; column: { getIsSorte
   const sorted = column.getIsSorted()
   return (
     <button
-      className="flex items-center gap-1 hover:text-foreground transition-colors"
+      className="flex items-center gap-1.5 hover:text-foreground transition-colors text-xs uppercase tracking-wider font-medium"
       onClick={() => column.toggleSorting()}
     >
       {label}
       {sorted === 'asc' ? (
-        <ArrowUp className="h-3.5 w-3.5" />
+        <ArrowUp className="size-3" />
       ) : sorted === 'desc' ? (
-        <ArrowDown className="h-3.5 w-3.5" />
+        <ArrowDown className="size-3" />
       ) : (
-        <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        <ArrowUpDown className="size-3 opacity-30" />
       )}
     </button>
   )
@@ -135,7 +135,7 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
       id: 'index',
       header: '#',
       cell: (info) => (
-        <span className="text-muted-foreground font-medium">{info.row.index + 1}</span>
+        <span className="text-muted-foreground tabular-nums text-xs">{info.row.index + 1}</span>
       ),
       meta: { align: 'center' },
     },
@@ -168,14 +168,14 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
       id: 'distance',
       accessorFn: (row: LapHandle): number => row.stats.distance,
       header: ({ column }) => <SortableHeader label="Distance" column={column} />,
-      cell: (info) => formatDistance(info.getValue<number>()),
+      cell: (info) => <span className="tabular-nums">{formatDistance(info.getValue<number>())}</span>,
       meta: { align: 'right' },
     },
     {
       id: 'duration',
       accessorFn: (row: LapHandle): number => row.stats.duration,
       header: ({ column }) => <SortableHeader label="Duration" column={column} />,
-      cell: (info) => formatDuration(info.getValue<number>()),
+      cell: (info) => <span className="tabular-nums">{formatDuration(info.getValue<number>())}</span>,
       meta: { align: 'right' },
     },
     {
@@ -184,7 +184,7 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
       header: ({ column }) => <SortableHeader label="Pace" column={column} />,
       cell: (info) => {
         const lap = info.row.original
-        return formatPace(lap.stats.distance, lap.stats.duration)
+        return <span className="tabular-nums">{formatPace(lap.stats.distance, lap.stats.duration)}</span>
       },
       meta: { align: 'right' },
     },
@@ -194,7 +194,7 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
       header: ({ column }) => <SortableHeader label="Avg HR" column={column} />,
       cell: (info) => {
         const v = info.getValue<number | undefined>()
-        return v != null ? `${Math.round(v)} bpm` : '-'
+        return <span className="tabular-nums">{v != null ? `${Math.round(v)}` : '-'}</span>
       },
       meta: { align: 'right' },
     },
@@ -204,7 +204,7 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
       header: ({ column }) => <SortableHeader label="Max HR" column={column} />,
       cell: (info) => {
         const v = info.getValue<number | undefined>()
-        return v != null ? `${v} bpm` : '-'
+        return <span className="tabular-nums">{v != null ? `${v}` : '-'}</span>
       },
       meta: { align: 'right' },
     },
@@ -214,37 +214,37 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
       header: ({ column }) => <SortableHeader label="Cadence" column={column} />,
       cell: (info) => {
         const v = info.getValue<number | undefined>()
-        return v != null ? `${v} spm` : '-'
+        return <span className="tabular-nums">{v != null ? `${v}` : '-'}</span>
       },
       meta: { align: 'right' },
     },
     {
       id: 'avgPower',
       accessorFn: (row: LapHandle): number | undefined => row.stats.avgPower,
-      header: ({ column }) => <SortableHeader label="Avg Power" column={column} />,
+      header: ({ column }) => <SortableHeader label="Power" column={column} />,
       cell: (info) => {
         const v = info.getValue<number | undefined>()
-        return v != null ? `${v} W` : '-'
+        return <span className="tabular-nums">{v != null ? `${v}W` : '-'}</span>
       },
       meta: { align: 'right' },
     },
     {
       id: 'maxSpeed',
       accessorFn: (row: LapHandle): number | undefined => row.stats.maxSpeed,
-      header: ({ column }) => <SortableHeader label="Max Speed" column={column} />,
+      header: ({ column }) => <SortableHeader label="Max Spd" column={column} />,
       cell: (info) => {
         const v = info.getValue<number | undefined>()
-        return v != null ? formatSpeed(v) : '-'
+        return <span className="tabular-nums">{v != null ? formatSpeed(v) : '-'}</span>
       },
       meta: { align: 'right' },
     },
     {
       id: 'calories',
       accessorFn: (row: LapHandle): number | undefined => row.stats.calories,
-      header: ({ column }) => <SortableHeader label="Calories" column={column} />,
+      header: ({ column }) => <SortableHeader label="Cal" column={column} />,
       cell: (info) => {
         const v = info.getValue<number | undefined>()
-        return v != null ? `${v} kcal` : '-'
+        return <span className="tabular-nums">{v != null ? `${v}` : '-'}</span>
       },
       meta: { align: 'right' },
     },
@@ -254,7 +254,7 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
       header: ({ column }) => <SortableHeader label="Elev +" column={column} />,
       cell: (info) => {
         const v = info.getValue<number | undefined>()
-        return v != null ? `${v} m` : '-'
+        return <span className="tabular-nums">{v != null ? `${v}m` : '-'}</span>
       },
       meta: { align: 'right' },
     },
@@ -264,14 +264,14 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
       header: ({ column }) => <SortableHeader label="Elev -" column={column} />,
       cell: (info) => {
         const v = info.getValue<number | undefined>()
-        return v != null ? `${v} m` : '-'
+        return <span className="tabular-nums">{v != null ? `${v}m` : '-'}</span>
       },
       meta: { align: 'right' },
     },
     {
       accessorKey: 'pointCount',
-      header: ({ column }) => <SortableHeader label="Points" column={column} />,
-      cell: (info) => info.getValue<number>(),
+      header: ({ column }) => <SortableHeader label="Pts" column={column} />,
+      cell: (info) => <span className="tabular-nums text-muted-foreground">{info.getValue<number>()}</span>,
       meta: { align: 'right' },
     },
     {
@@ -284,19 +284,19 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
         const isLast = index === laps.length - 1
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-7 w-7" />}>
-              <MoreHorizontal className="h-4 w-4" />
+            <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" />}>
+              <MoreHorizontal className="size-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => startEditing(lap)}>
-                <Pencil className="h-4 w-4" />
+                <Pencil className="size-3.5" />
                 Rename
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => moveLap(index, 'up')}
                 disabled={isFirst || isSorted}
               >
-                <ChevronUp className="h-4 w-4" />
+                <ChevronUp className="size-3.5" />
                 Move up
                 {isSorted && <span className="ml-auto text-xs text-muted-foreground">sorted</span>}
               </DropdownMenuItem>
@@ -304,7 +304,7 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
                 onClick={() => moveLap(index, 'down')}
                 disabled={isLast || isSorted}
               >
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="size-3.5" />
                 Move down
                 {isSorted && <span className="ml-auto text-xs text-muted-foreground">sorted</span>}
               </DropdownMenuItem>
@@ -313,18 +313,18 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
                 onClick={() => setSplitLap(lap)}
                 disabled={lap.pointCount < 3}
               >
-                <Scissors className="h-4 w-4" />
+                <Scissors className="size-3.5" />
                 Split
               </DropdownMenuItem>
               {!isLast && (
                 <DropdownMenuItem onClick={() => onMerge([lap.id, laps[index + 1].id])}>
-                  <Merge className="h-4 w-4" />
+                  <Merge className="size-3.5" />
                   Merge with next
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={() => setDeletingLap(lap)}>
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="size-3.5" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -383,75 +383,77 @@ export function LapTable({ laps, sourceFormat, onDelete, onSplit, onMerge, onRen
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                const align = (header.column.columnDef.meta as { align?: string })?.align ?? 'left'
+      <div className="rounded-xl border border-border/60 bg-card/80 overflow-hidden">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="border-border/60 hover:bg-transparent">
+                {headerGroup.headers.map((header) => {
+                  const align = (header.column.columnDef.meta as { align?: string })?.align ?? 'left'
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className={`text-xs uppercase tracking-wider text-muted-foreground font-medium ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''}`}
+                    >
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id} className="border-border/40 hover:bg-warm-50/50 dark:hover:bg-warm-800/20 transition-colors">
+                {row.getVisibleCells().map((cell) => {
+                  const align = (cell.column.columnDef.meta as { align?: string })?.align ?? 'left'
+                  return (
+                    <TableCell
+                      key={cell.id}
+                      className={`text-sm ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''}`}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow className="bg-warm-50/50 dark:bg-warm-800/10 hover:bg-warm-50/50 dark:hover:bg-warm-800/10">
+              {table.getVisibleFlatColumns().map((col) => {
+                const align = (col.columnDef.meta as { align?: string })?.align ?? 'left'
+                const cls = `text-sm font-medium ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''}`
+                let content: string | null = null
+
+                switch (col.id) {
+                  case 'index': content = ''; break
+                  case 'name': content = `${laps.length} laps`; break
+                  case 'distance': content = formatDistance(totals.totalDistance); break
+                  case 'duration': content = formatDuration(totals.totalDuration); break
+                  case 'pace': content = formatPace(totals.totalDistance, totals.totalDuration); break
+                  case 'avgHr': content = totals.avgHr != null ? `${Math.round(totals.avgHr)}` : ''; break
+                  case 'maxHr': content = totals.maxHr != null ? `${totals.maxHr}` : ''; break
+                  case 'avgCadence': content = totals.avgCadence != null ? `${Math.round(totals.avgCadence)}` : ''; break
+                  case 'avgPower': content = totals.avgPower != null ? `${Math.round(totals.avgPower)}W` : ''; break
+                  case 'maxSpeed': content = totals.maxSpeed != null ? formatSpeed(totals.maxSpeed) : ''; break
+                  case 'calories': content = totals.totalCalories != null ? `${totals.totalCalories}` : ''; break
+                  case 'elevationGain': content = totals.totalElevGain != null ? `${totals.totalElevGain}m` : ''; break
+                  case 'elevationLoss': content = totals.totalElevLoss != null ? `${totals.totalElevLoss}m` : ''; break
+                  case 'pointCount': content = `${totals.totalPoints}`; break
+                  case 'actions': content = ''; break
+                }
+
                 return (
-                  <TableHead
-                    key={header.id}
-                    className={align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''}
-                  >
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                )
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => {
-                const align = (cell.column.columnDef.meta as { align?: string })?.align ?? 'left'
-                return (
-                  <TableCell
-                    key={cell.id}
-                    className={align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  <TableCell key={col.id} className={cls}>
+                    <span className="tabular-nums">{content}</span>
                   </TableCell>
                 )
               })}
             </TableRow>
-          ))}
-        </TableBody>
-        <TableFooter>
-          <TableRow>
-            {table.getVisibleFlatColumns().map((col) => {
-              const align = (col.columnDef.meta as { align?: string })?.align ?? 'left'
-              const cls = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''
-              let content: string | null = null
-
-              switch (col.id) {
-                case 'index': content = ''; break
-                case 'name': content = `${laps.length} laps`; break
-                case 'distance': content = formatDistance(totals.totalDistance); break
-                case 'duration': content = formatDuration(totals.totalDuration); break
-                case 'pace': content = formatPace(totals.totalDistance, totals.totalDuration); break
-                case 'avgHr': content = totals.avgHr != null ? `${Math.round(totals.avgHr)} bpm` : ''; break
-                case 'maxHr': content = totals.maxHr != null ? `${totals.maxHr} bpm` : ''; break
-                case 'avgCadence': content = totals.avgCadence != null ? `${Math.round(totals.avgCadence)} spm` : ''; break
-                case 'avgPower': content = totals.avgPower != null ? `${Math.round(totals.avgPower)} W` : ''; break
-                case 'maxSpeed': content = totals.maxSpeed != null ? formatSpeed(totals.maxSpeed) : ''; break
-                case 'calories': content = totals.totalCalories != null ? `${totals.totalCalories} kcal` : ''; break
-                case 'elevationGain': content = totals.totalElevGain != null ? `${totals.totalElevGain} m` : ''; break
-                case 'elevationLoss': content = totals.totalElevLoss != null ? `${totals.totalElevLoss} m` : ''; break
-                case 'pointCount': content = `${totals.totalPoints}`; break
-                case 'actions': content = ''; break
-              }
-
-              return (
-                <TableCell key={col.id} className={cls}>
-                  {content}
-                </TableCell>
-              )
-            })}
-          </TableRow>
-        </TableFooter>
-      </Table>
+          </TableFooter>
+        </Table>
+      </div>
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={deletingLap !== null} onOpenChange={(open) => !open && setDeletingLap(null)}>
