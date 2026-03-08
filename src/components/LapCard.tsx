@@ -150,10 +150,8 @@ export function LapCard({
               </Button>
             )}
             <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete lap">
+              <AlertDialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete lap" />}>
                   <Trash2 className="h-4 w-4" />
-                </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>

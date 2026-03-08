@@ -148,12 +148,10 @@ export function GpxEditor() {
             New file
           </Button>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>
+            <DropdownMenuTrigger render={<Button />}>
                 <Download className="mr-2 h-4 w-4" />
                 Export
                 <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleExport('gpx')}>
