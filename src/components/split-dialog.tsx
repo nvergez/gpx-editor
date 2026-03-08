@@ -91,7 +91,10 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
     return indices
   }, [numParts, totalDistance, cumulativeDistances, points.length])
 
-  const activeIndices = mode === 'manual' ? [splitIndex] : equalSplitIndices
+  const activeIndices = useMemo(
+    () => (mode === 'manual' ? [splitIndex] : equalSplitIndices),
+    [mode, splitIndex, equalSplitIndices],
+  )
 
   // Compute segment stats for the preview
   const segments = useMemo(() => {
