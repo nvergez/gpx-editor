@@ -462,10 +462,16 @@ export function LapTable({
                 {headerGroup.headers.map((header) => {
                   const align =
                     (header.column.columnDef.meta as { align?: string })?.align ?? 'left'
+                  const stickyClass =
+                    header.column.id === 'index'
+                      ? 'sticky left-0 z-10 bg-card'
+                      : header.column.id === 'actions'
+                        ? 'sticky right-0 bg-card'
+                        : ''
                   return (
                     <TableHead
                       key={header.id}
-                      className={`text-xs uppercase tracking-wider text-muted-foreground font-medium ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''}`}
+                      className={`text-xs uppercase tracking-wider text-muted-foreground font-medium ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''} ${stickyClass}`}
                     >
                       {header.isPlaceholder
                         ? null
@@ -480,14 +486,20 @@ export function LapTable({
             {table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
-                className="border-border/40 hover:bg-warm-50/50 dark:hover:bg-warm-800/20 transition-colors"
+                className="group border-border/40 hover:bg-warm-50/50 dark:hover:bg-warm-800/20 transition-colors"
               >
                 {row.getVisibleCells().map((cell) => {
                   const align = (cell.column.columnDef.meta as { align?: string })?.align ?? 'left'
+                  const stickyClass =
+                    cell.column.id === 'index'
+                      ? 'sticky left-0 z-10 bg-card group-hover:bg-warm-50/50 dark:group-hover:bg-warm-800/20 transition-colors'
+                      : cell.column.id === 'actions'
+                        ? 'sticky right-0 bg-card group-hover:bg-warm-50/50 dark:group-hover:bg-warm-800/20 transition-colors'
+                        : ''
                   return (
                     <TableCell
                       key={cell.id}
-                      className={`text-sm ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''}`}
+                      className={`text-sm ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''} ${stickyClass}`}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
