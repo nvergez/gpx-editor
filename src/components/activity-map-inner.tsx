@@ -1,8 +1,9 @@
-import { memo, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { MapContainer, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import type { LapTrack } from './activity-map'
 import { getLapColor } from '~/utils/lap-colors'
+import { useDarkMode } from '~/hooks/use-dark-mode'
 
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
 const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png'
@@ -14,40 +15,6 @@ interface MapInnerProps {
   lapTracks: LapTrack[]
   hoveredLapId: string | null
   onHoverLap: (lapId: string | null) => void
-}
-
-// --- Dark mode detection via useSyncExternalStore (lazy-initialized) ---
-
-const darkModeListeners = new Set<() => void>()
-let currentDarkMode = false
-let observerInitialized = false
-
-function ensureObserver() {
-  if (observerInitialized) return
-  observerInitialized = true
-  currentDarkMode = document.documentElement.classList.contains('dark')
-  const observer = new MutationObserver(() => {
-    const next = document.documentElement.classList.contains('dark')
-    if (next !== currentDarkMode) {
-      currentDarkMode = next
-      darkModeListeners.forEach((l) => l())
-    }
-  })
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-}
-
-function subscribeDarkMode(onStoreChange: () => void) {
-  ensureObserver()
-  darkModeListeners.add(onStoreChange)
-  return () => darkModeListeners.delete(onStoreChange)
-}
-function getDarkModeSnapshot() {
-  ensureObserver()
-  return currentDarkMode
-}
-
-function useDarkMode(): boolean {
-  return useSyncExternalStore(subscribeDarkMode, getDarkModeSnapshot, () => false)
 }
 
 // --- Helpers ---

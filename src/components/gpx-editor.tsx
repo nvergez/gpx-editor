@@ -18,6 +18,7 @@ import {
 import { GpxUpload } from './gpx-upload'
 import { LapTable } from './lap-table'
 import { ActivityMap } from './activity-map'
+import { ElevationChart } from './elevation-chart'
 import { Button } from '~/components/ui/button'
 import {
   AlertDialog,
@@ -330,6 +331,14 @@ export function GpxEditor() {
       </div>
 
       <ActivityMap
+        laps={laps}
+        sourceFormat={actDoc.sourceFormat}
+        revision={revision}
+        hoveredLapId={hoveredLapId}
+        onHoverLap={setHoveredLapId}
+      />
+
+      <ElevationChart
         laps={laps}
         sourceFormat={actDoc.sourceFormat}
         revision={revision}

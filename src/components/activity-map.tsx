@@ -1,8 +1,9 @@
-import { lazy, Suspense, useMemo, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
 import type { LapHandle } from '~/utils/dom-model'
 import { getTrackPointsFromElement } from '~/utils/dom-operations'
 import { simplifyTrack } from '~/utils/simplify-track'
 import { Map as MapIcon } from 'lucide-react'
+import { useIsClient } from '~/hooks/use-is-client'
 
 // Lazy-load to avoid Leaflet SSR crash (it accesses `window` at import time)
 const MapInner = lazy(() => import('./activity-map-inner'))
@@ -27,11 +28,7 @@ export function ActivityMap({
   hoveredLapId,
   onHoverLap,
 }: ActivityMapProps) {
-  const isClient = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  )
+  const isClient = useIsClient()
 
   const lapTracks = useMemo((): LapTrack[] => {
     void revision
