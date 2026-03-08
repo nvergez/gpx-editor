@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { LapHandle } from '~/utils/dom-model'
 import { formatDistance, formatDuration, formatPace } from '~/utils/gpx-parser'
-import { LapCard } from './LapCard'
-import { SplitDialog } from './SplitDialog'
+import { LapCard } from './lap-card'
+import { SplitDialog } from './split-dialog'
 
 interface LapListProps {
   laps: LapHandle[]

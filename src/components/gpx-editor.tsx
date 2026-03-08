@@ -14,8 +14,8 @@ import {
   exportOriginal,
   getTrackPointsFromElement,
 } from '~/utils/dom-operations'
-import { GpxUpload } from './GpxUpload'
-import { LapTable } from './LapTable'
+import { GpxUpload } from './gpx-upload'
+import { LapTable } from './lap-table'
 import { Button } from '~/components/ui/button'
 import {
   AlertDialog,

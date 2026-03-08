@@ -38,7 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
-import { SplitDialog } from './SplitDialog'
+import { SplitDialog } from './split-dialog'
 import {
   MoreHorizontal,
   Pencil,
