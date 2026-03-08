@@ -173,7 +173,7 @@ function calculateDuration(points: TrackPoint[]): number {
   return (new Date(last).getTime() - new Date(first).getTime()) / 1000
 }
 
-export function computeStats(points: TrackPoint[], tcxLapMeta?: TcxLapMeta): LapStats {
+export function computeStats(points: TrackPoint[]): LapStats {
   const distance = calculateDistance(points)
   const duration = calculateDuration(points)
 
@@ -197,12 +197,11 @@ export function computeStats(points: TrackPoint[], tcxLapMeta?: TcxLapMeta): Lap
   return {
     distance,
     duration,
-    avgHr: tcxLapMeta?.avgHr ?? (hrs.length > 0 ? Math.round(avg(hrs)) : undefined),
-    maxHr: tcxLapMeta?.maxHr ?? (hrs.length > 0 ? Math.max(...hrs) : undefined),
+    avgHr: hrs.length > 0 ? Math.round(avg(hrs)) : undefined,
+    maxHr: hrs.length > 0 ? Math.max(...hrs) : undefined,
     avgCadence: cadences.length > 0 ? Math.round(avg(cadences)) : undefined,
     avgPower: powers.length > 0 ? Math.round(avg(powers)) : undefined,
-    maxSpeed: tcxLapMeta?.maxSpeed ?? (speeds.length > 0 ? Math.max(...speeds) : undefined),
-    calories: tcxLapMeta?.calories,
+    maxSpeed: speeds.length > 0 ? Math.max(...speeds) : undefined,
     elevationGain: elevationGain > 0 ? Math.round(elevationGain) : undefined,
     elevationLoss: elevationLoss > 0 ? Math.round(elevationLoss) : undefined,
   }
@@ -212,144 +211,10 @@ function avg(values: number[]): number {
   return values.reduce((s, v) => s + v, 0) / values.length
 }
 
-// --- Lap creation ---
-
-let lapIdCounter = 0
-
-interface TcxLapMeta {
-  calories?: number
-  avgHr?: number
-  maxHr?: number
-  maxSpeed?: number
-}
-
-export function createLap(name: string, points: TrackPoint[], tcxLapMeta?: TcxLapMeta): GpxLap {
-  lapIdCounter++
-  return {
-    id: `lap-${lapIdCounter}-${Date.now()}`,
-    name,
-    points,
-    startTime: points[0]?.time,
-    endTime: points[points.length - 1]?.time,
-    stats: computeStats(points, tcxLapMeta),
-  }
-}
-
-// --- Format detection & parsing ---
-
-export function detectFormat(xmlString: string): 'gpx' | 'tcx' {
-  if (xmlString.includes('<TrainingCenterDatabase')) return 'tcx'
-  if (xmlString.includes('<gpx')) return 'gpx'
-  throw new Error('Unrecognized file format. Expected GPX or TCX.')
-}
-
-export function parseActivityFile(xmlString: string): GpxData {
-  const format = detectFormat(xmlString)
-  if (format === 'tcx') return parseTcx(xmlString)
-  return parseGpx(xmlString)
-}
-
-export function parseGpx(xmlString: string): GpxData {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(xmlString, 'application/xml')
-
-  const parseError = doc.querySelector('parsererror')
-  if (parseError) {
-    throw new Error('Invalid GPX file: ' + parseError.textContent)
-  }
-
-  const nameEl = doc.querySelector('trk > name') || doc.querySelector('metadata > name')
-  const name = nameEl?.textContent || 'Unnamed Track'
-
-  const tracks = doc.getElementsByTagName('trk')
-  const laps: GpxLap[] = []
-
-  for (let t = 0; t < tracks.length; t++) {
-    const track = tracks[t]
-    const segments = track.getElementsByTagName('trkseg')
-
-    for (let s = 0; s < segments.length; s++) {
-      const points = parseGpxPoints(segments[s])
-      if (points.length > 0) {
-        const trackName = track.querySelector('name')?.textContent
-        const lapName =
-          segments.length > 1
-            ? `${trackName || 'Track'} - Segment ${s + 1}`
-            : trackName || `Track ${t + 1}`
-        laps.push(createLap(lapName, points))
-      }
-    }
-  }
-
-  return { name, laps, sourceFormat: 'gpx' }
-}
-
-export function parseTcx(xmlString: string): GpxData {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(xmlString, 'application/xml')
-
-  const parseError = doc.querySelector('parsererror')
-  if (parseError) {
-    throw new Error('Invalid TCX file: ' + parseError.textContent)
-  }
-
-  const activity = doc.getElementsByTagName('Activity')[0]
-  if (!activity) {
-    throw new Error('No Activity found in TCX file')
-  }
-
-  const sport = activity.getAttribute('Sport') || 'Activity'
-  const notes = activity.getElementsByTagName('Notes')[0]?.textContent
-  const name = notes || sport
-
-  const lapElements = activity.getElementsByTagName('Lap')
-  const laps: GpxLap[] = []
-
-  for (let i = 0; i < lapElements.length; i++) {
-    const lapEl = lapElements[i]
-    const points = parseTcxTrackpoints(lapEl)
-    if (points.length === 0) continue
-
-    // Extract lap-level metadata from TCX
-    const calories = parseOptionalFloat(lapEl.getElementsByTagName('Calories')[0]?.textContent)
-    const avgHrEl = lapEl.getElementsByTagName('AverageHeartRateBpm')[0]
-    const maxHrEl = lapEl.getElementsByTagName('MaximumHeartRateBpm')[0]
-    const maxSpeedEl = lapEl.getElementsByTagName('MaximumSpeed')[0]
-
-    const tcxMeta: TcxLapMeta = {
-      calories: calories !== undefined ? Math.round(calories) : undefined,
-      avgHr: avgHrEl
-        ? parseOptionalFloat(avgHrEl.getElementsByTagName('Value')[0]?.textContent)
-        : undefined,
-      maxHr: maxHrEl
-        ? parseOptionalFloat(maxHrEl.getElementsByTagName('Value')[0]?.textContent)
-        : undefined,
-      maxSpeed: parseOptionalFloat(maxSpeedEl?.textContent),
-    }
-
-    laps.push(createLap(`Lap ${i + 1}`, points, tcxMeta))
-  }
-
-  return { name, laps, sourceFormat: 'tcx' }
-}
-
-function parseOptionalFloat(text: string | null | undefined): number | undefined {
+export function parseOptionalFloat(text: string | null | undefined): number | undefined {
   if (!text) return undefined
   const val = parseFloat(text)
   return isNaN(val) ? undefined : val
-}
-
-// --- Lap operations ---
-
-export function splitLapAtIndex(lap: GpxLap, pointIndex: number): [GpxLap, GpxLap] {
-  if (pointIndex <= 0 || pointIndex >= lap.points.length) {
-    throw new Error('Split index must be between 1 and points.length - 1')
-  }
-
-  const firstPoints = lap.points.slice(0, pointIndex + 1)
-  const secondPoints = lap.points.slice(pointIndex)
-
-  return [createLap(`${lap.name} (1)`, firstPoints), createLap(`${lap.name} (2)`, secondPoints)]
 }
 
 // --- Export ---

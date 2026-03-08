@@ -167,18 +167,17 @@ export function LapTable({
           const lap = info.row.original
           if (editingLapId === lap.id) {
             return (
-              <div className="flex items-center gap-1">
-                <Input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitRename(lap.id)
-                    if (e.key === 'Escape') cancelEditing()
-                  }}
-                  className="h-7 text-sm w-40"
-                  autoFocus
-                />
-              </div>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitRename(lap.id)
+                  if (e.key === 'Escape') cancelEditing()
+                }}
+                onBlur={() => commitRename(lap.id)}
+                className="h-7 text-sm w-40"
+                autoFocus
+              />
             )
           }
           return <span className="font-medium truncate max-w-48 block">{lap.name}</span>

@@ -6,6 +6,7 @@ import { exportGpx, exportTcx } from '~/utils/gpx-parser'
 import {
   parseToDocument,
   getLapHandles,
+  countLaps,
   deleteLap,
   splitLap,
   mergeLaps,
@@ -67,15 +68,15 @@ export function GpxEditor() {
   const handleFileLoaded = useCallback((xmlString: string) => {
     try {
       const doc = parseToDocument(xmlString)
-      const handles = getLapHandles(doc)
-      if (handles.length === 0) {
+      const lapCount = countLaps(doc)
+      if (lapCount === 0) {
         toast.error('No tracks/laps found in this file')
         return
       }
       setActDoc(doc)
       setRevision(0)
-      setShowGpxHint(doc.sourceFormat === 'gpx' && handles.length === 1)
-      toast.success(`Loaded "${doc.name}" with ${handles.length} lap(s)`)
+      setShowGpxHint(doc.sourceFormat === 'gpx' && lapCount === 1)
+      toast.success(`Loaded "${doc.name}" with ${lapCount} lap(s)`)
     } catch (e) {
       toast.error(`Failed to parse file: ${e instanceof Error ? e.message : 'Unknown error'}`)
     }
@@ -148,11 +149,10 @@ export function GpxEditor() {
       const baseName = sanitizeFilename(actDoc.name)
 
       // Build GpxData-like structure for cross-format export
-      const handles = getLapHandles(actDoc)
       const gpxData = {
         name: actDoc.name,
         sourceFormat: actDoc.sourceFormat,
-        laps: handles.map((h) => {
+        laps: laps.map((h) => {
           const points = getTrackPointsFromElement(h.element, actDoc.sourceFormat)
           return {
             id: h.id,
@@ -173,7 +173,7 @@ export function GpxEditor() {
         toast.success('GPX file exported')
       }
     },
-    [actDoc],
+    [actDoc, laps],
   )
 
   const handleExportCrossFormat = useCallback((format: 'gpx' | 'tcx') => {

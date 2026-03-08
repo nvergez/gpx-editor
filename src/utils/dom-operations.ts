@@ -1,6 +1,11 @@
 import type { ActivityDocument, LapHandle } from './dom-model'
 import type { TrackPoint, LapStats } from './gpx-parser'
-import { haversineDistance, computeStats, parseGpxPoints, parseTcxTrackpoints } from './gpx-parser'
+import {
+  computeStats,
+  parseGpxPoints,
+  parseOptionalFloat,
+  parseTcxTrackpoints,
+} from './gpx-parser'
 
 // --- Parsing ---
 
@@ -57,6 +62,10 @@ function extractName(doc: Document, format: 'gpx' | 'tcx'): string {
 }
 
 // --- Lap access ---
+
+export function countLaps(actDoc: ActivityDocument): number {
+  return getLapElements(actDoc).length
+}
 
 function getLapElements(actDoc: ActivityDocument): Element[] {
   const { doc, sourceFormat } = actDoc
@@ -162,12 +171,6 @@ function getDirectChildText(parent: Element, tagName: string): string | null {
     }
   }
   return null
-}
-
-function parseOptionalFloat(text: string | null | undefined): number | undefined {
-  if (!text) return undefined
-  const val = parseFloat(text)
-  return isNaN(val) ? undefined : val
 }
 
 // --- TrackPoint extraction (for SplitDialog) ---
@@ -401,36 +404,20 @@ function recalcTcxLapSummary(lapEl: Element): void {
   const points = parseTcxTrackpoints(lapEl)
   if (points.length === 0) return
 
-  const computedStats = computeStats(points)
+  const stats = computeStats(points)
 
-  setOrCreateChild(lapEl, 'TotalTimeSeconds', computedStats.duration.toFixed(3))
+  setOrCreateChild(lapEl, 'TotalTimeSeconds', stats.duration.toFixed(3))
+  setOrCreateChild(lapEl, 'DistanceMeters', stats.distance.toFixed(2))
 
-  // Calculate distance from trackpoints
-  let totalDist = 0
-  for (let i = 1; i < points.length; i++) {
-    totalDist += haversineDistance(points[i - 1], points[i])
+  if (stats.avgHr != null) {
+    setOrCreateHrChild(lapEl, 'AverageHeartRateBpm', Math.round(stats.avgHr))
   }
-  setOrCreateChild(lapEl, 'DistanceMeters', totalDist.toFixed(2))
-
-  // Recalc HR averages from trackpoints
-  const hrs = points.map((p) => p.hr).filter((v): v is number => v !== undefined)
-  if (hrs.length > 0) {
-    setOrCreateHrChild(
-      lapEl,
-      'AverageHeartRateBpm',
-      Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length),
-    )
-    setOrCreateHrChild(lapEl, 'MaximumHeartRateBpm', Math.max(...hrs))
+  if (stats.maxHr != null) {
+    setOrCreateHrChild(lapEl, 'MaximumHeartRateBpm', stats.maxHr)
   }
-
-  // MaximumSpeed from trackpoints
-  const speeds = points.map((p) => p.speed).filter((v): v is number => v !== undefined)
-  if (speeds.length > 0) {
-    setOrCreateChild(lapEl, 'MaximumSpeed', Math.max(...speeds).toString())
+  if (stats.maxSpeed != null) {
+    setOrCreateChild(lapEl, 'MaximumSpeed', stats.maxSpeed.toString())
   }
-
-  // Calories: proportional split based on duration ratio if we can't compute
-  // Leave existing calories if present (will be handled by split caller proportionally)
 }
 
 function setOrCreateChild(parent: Element, tagName: string, value: string): void {

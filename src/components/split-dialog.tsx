@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import type { LapHandle } from '~/utils/dom-model'
-import { formatDistance } from '~/utils/gpx-parser'
-import { calculateDistance } from '~/utils/gpx-parser'
+import { formatDistance, haversineDistance } from '~/utils/gpx-parser'
 import { getTrackPointsFromElement } from '~/utils/dom-operations'
 import {
   Dialog,
@@ -29,15 +28,21 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
     [lap.element, sourceFormat],
   )
 
+  // Precompute cumulative distances so slider lookup is O(1)
+  const cumulativeDistances = useMemo(() => {
+    const cumDist = [0]
+    for (let i = 1; i < points.length; i++) {
+      cumDist.push(cumDist[i - 1] + haversineDistance(points[i - 1], points[i]))
+    }
+    return cumDist
+  }, [points])
+
   const midpoint = Math.floor(points.length / 2)
   const [splitIndex, setSplitIndex] = useState(midpoint)
 
   const maxIndex = points.length - 1
 
-  const firstHalf = points.slice(0, splitIndex + 1)
-  const secondHalf = points.slice(splitIndex)
-
-  const firstDistance = calculateDistance(firstHalf)
+  const firstDistance = cumulativeDistances[splitIndex] ?? 0
   const secondDistance = lap.stats.distance - firstDistance
 
   // Visual split ratio for the bar
@@ -95,14 +100,14 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
               <p className="text-xs uppercase tracking-wider text-muted-foreground">First half</p>
               <p className="font-medium tabular-nums">{formatDistance(firstDistance)}</p>
               <p className="text-xs text-muted-foreground tabular-nums">
-                {firstHalf.length} points
+                {splitIndex + 1} points
               </p>
             </div>
             <div className="p-3 rounded-lg bg-muted/60 border border-border/40 space-y-1">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Second half</p>
               <p className="font-medium tabular-nums">{formatDistance(secondDistance)}</p>
               <p className="text-xs text-muted-foreground tabular-nums">
-                {secondHalf.length} points
+                {points.length - splitIndex} points
               </p>
             </div>
           </div>
