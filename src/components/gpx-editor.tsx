@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import type { ActivityDocument } from '~/utils/dom-model'
 import type { LapHandle } from '~/utils/dom-model'
@@ -34,7 +34,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import { RotateCcw, ChevronDown, Info, X, FileDown } from 'lucide-react'
+import { RotateCcw, ChevronDown, Info, X, FileDown, Undo2, Redo2 } from 'lucide-react'
+import { UndoManager } from '~/utils/undo-manager'
 
 function downloadFile(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType })
@@ -53,6 +54,7 @@ function sanitizeFilename(name: string): string {
 export function GpxEditor() {
   const [actDoc, setActDoc] = useState<ActivityDocument | null>(null)
   const [revision, setRevision] = useState(0)
+  const undoManagerRef = useRef(new UndoManager())
   const [showGpxHint, setShowGpxHint] = useState(false)
   const [crossFormatTarget, setCrossFormatTarget] = useState<'gpx' | 'tcx' | null>(null)
 
@@ -63,7 +65,14 @@ export function GpxEditor() {
     return getLapHandles(actDoc)
   }, [actDoc, revision])
 
-  const bumpRevision = useCallback(() => setRevision((r) => r + 1), [])
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
+
+  const bumpRevision = useCallback(() => {
+    setRevision((r) => r + 1)
+    setCanUndo(undoManagerRef.current.canUndo)
+    setCanRedo(undoManagerRef.current.canRedo)
+  }, [])
 
   const handleFileLoaded = useCallback((xmlString: string) => {
     try {
@@ -73,6 +82,9 @@ export function GpxEditor() {
         toast.error('No tracks/laps found in this file')
         return
       }
+      undoManagerRef.current.reset()
+      setCanUndo(false)
+      setCanRedo(false)
       setActDoc(doc)
       setRevision(0)
       setShowGpxHint(doc.sourceFormat === 'gpx' && lapCount === 1)
@@ -85,6 +97,7 @@ export function GpxEditor() {
   const handleDeleteLap = useCallback(
     (lapId: string) => {
       if (!actDoc) return
+      undoManagerRef.current.snapshot(actDoc)
       deleteLap(actDoc, lapId)
       bumpRevision()
       toast.success('Lap deleted')
@@ -95,6 +108,7 @@ export function GpxEditor() {
   const handleSplitLap = useCallback(
     (lapId: string, pointIndices: number[]) => {
       if (!actDoc) return
+      undoManagerRef.current.snapshot(actDoc)
       splitLap(actDoc, lapId, pointIndices)
       bumpRevision()
       const parts = pointIndices.length + 1
@@ -106,6 +120,7 @@ export function GpxEditor() {
   const handleMergeLaps = useCallback(
     (lapIds: [string, string]) => {
       if (!actDoc) return
+      undoManagerRef.current.snapshot(actDoc)
       mergeLaps(actDoc, lapIds[0], lapIds[1])
       bumpRevision()
       toast.success('Laps merged')
@@ -116,6 +131,7 @@ export function GpxEditor() {
   const handleRenameLap = useCallback(
     (lapId: string, newName: string) => {
       if (!actDoc) return
+      undoManagerRef.current.snapshot(actDoc)
       renameLap(actDoc, lapId, newName)
       bumpRevision()
     },
@@ -125,6 +141,7 @@ export function GpxEditor() {
   const handleReorderLaps = useCallback(
     (reorderedLaps: LapHandle[]) => {
       if (!actDoc) return
+      undoManagerRef.current.snapshot(actDoc)
       reorderLaps(
         actDoc,
         reorderedLaps.map((l) => l.id),
@@ -188,7 +205,37 @@ export function GpxEditor() {
     setCrossFormatTarget(null)
   }, [crossFormatTarget, doCrossFormatExport])
 
+  const handleUndo = useCallback(() => {
+    if (!actDoc) return
+    if (undoManagerRef.current.undo(actDoc)) bumpRevision()
+  }, [actDoc, bumpRevision])
+
+  const handleRedo = useCallback(() => {
+    if (!actDoc) return
+    if (undoManagerRef.current.redo(actDoc)) bumpRevision()
+  }, [actDoc, bumpRevision])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey
+      if (!mod) return
+
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        handleUndo()
+      } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
+        e.preventDefault()
+        handleRedo()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [handleUndo, handleRedo])
+
   const handleReset = useCallback(() => {
+    undoManagerRef.current.reset()
+    setCanUndo(false)
+    setCanRedo(false)
     setActDoc(null)
     setRevision(0)
     setShowGpxHint(false)
@@ -233,6 +280,24 @@ export function GpxEditor() {
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleUndo}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRedo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            <Redo2 className="size-3.5" />
+          </Button>
           <Button variant="ghost" onClick={handleReset} size="sm">
             <RotateCcw className="size-3.5" />
             New file
