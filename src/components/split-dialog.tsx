@@ -205,7 +205,8 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
           {/* Visual split bar */}
           <div className="h-2 rounded-full bg-muted overflow-hidden flex">
             {segments.map((seg, i) => {
-              const width = totalDistance > 0 ? (seg.distance / totalDistance) * 100 : 100 / segments.length
+              const width =
+                totalDistance > 0 ? (seg.distance / totalDistance) * 100 : 100 / segments.length
               const isFirst = i === 0
               const isLast = i === segments.length - 1
               return (
@@ -220,7 +221,7 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
 
           {/* Segment details */}
           <div
-            className="grid gap-2 text-sm"
+            className="grid gap-2 text-sm max-h-48 overflow-y-auto"
             style={{
               gridTemplateColumns: `repeat(${Math.min(segments.length, 4)}, minmax(0, 1fr))`,
             }}
@@ -234,9 +235,7 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
                   Part {i + 1}
                 </p>
                 <p className="font-medium tabular-nums text-sm">{formatDistance(seg.distance)}</p>
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  {seg.pointCount} pts
-                </p>
+                <p className="text-xs text-muted-foreground tabular-nums">{seg.pointCount} pts</p>
               </div>
             ))}
           </div>
