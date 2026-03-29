@@ -353,7 +353,7 @@ export function exportTcx(gpxData: GpxData): string {
   return lines.join('\n')
 }
 
-function escapeXml(str: string): string {
+export function escapeXml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
