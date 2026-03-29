@@ -127,7 +127,10 @@ export function ActivityList({ activities, onDelete, onRename }: ActivityListPro
               <DropdownMenu>
                 <DropdownMenuTrigger
                   className="shrink-0 rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                  }}
                 >
                   <MoreHorizontal className="size-4 text-muted-foreground" />
                 </DropdownMenuTrigger>
@@ -135,6 +138,7 @@ export function ActivityList({ activities, onDelete, onRename }: ActivityListPro
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation()
+                      e.preventDefault()
                       startRename(activity)
                     }}
                   >
@@ -144,6 +148,7 @@ export function ActivityList({ activities, onDelete, onRename }: ActivityListPro
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation()
+                      e.preventDefault()
                       onDelete(activity._id)
                     }}
                     className="text-destructive"
