@@ -19,19 +19,49 @@ Requires **Node 24** and **pnpm**.
 
 ```bash
 pnpm install
+pnpm convex:dev
 pnpm dev
 ```
 
-The dev server starts at `http://localhost:3000`.
+`pnpm convex:dev` configures or connects a Convex deployment, pushes the backend
+functions in [`convex/`](/Users/nicolasvergez/conductor/workspaces/gpx-editor/sydney/convex), and generates the local `.env.local`
+values used by TanStack Start. Run it in one terminal and keep it running while
+developing. Then start the app with `pnpm dev` in a second terminal.
+
+The app server starts at `http://localhost:3000`.
+
+## Auth Setup
+
+This repo uses **Better Auth on top of Convex**, following the TanStack Start
+guide from Convex Labs.
+
+Before signing in locally, set the required Convex environment variables:
+
+```bash
+pnpm exec convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 32)"
+pnpm exec convex env set SITE_URL http://localhost:3000
+```
+
+Then run:
+
+```bash
+pnpm convex:dev
+```
+
+That command will create or refresh `.env.local` with values like
+`CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL`, and `VITE_CONVEX_SITE_URL`. A template
+is available in [`.env.example`](/Users/nicolasvergez/conductor/workspaces/gpx-editor/sydney/.env.example).
 
 ## Scripts
 
-| Command        | Description                                     |
-| -------------- | ----------------------------------------------- |
-| `pnpm dev`     | Start the Vite dev server                       |
-| `pnpm build`   | Production build (Vite + TypeScript type check) |
-| `pnpm preview` | Preview the production build locally            |
-| `pnpm start`   | Run the production server                       |
+| Command               | Description                                        |
+| --------------------- | -------------------------------------------------- |
+| `pnpm dev`            | Start the Vite dev server                          |
+| `pnpm convex:dev`     | Start Convex dev, push functions, and generate env |
+| `pnpm convex:codegen` | Regenerate Convex types after backend changes      |
+| `pnpm build`          | Production build (Vite + TypeScript type check)    |
+| `pnpm preview`        | Preview the production build locally               |
+| `pnpm start`          | Run the production server                          |
 
 ## Tech Stack
 

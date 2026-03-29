@@ -1,6 +1,9 @@
 **/build
 **/public
 .output
+.vercel
 .agents
 pnpm-lock.yaml
 routeTree.gen.ts
+.env.example
+convex/_generated
