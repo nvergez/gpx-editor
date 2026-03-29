@@ -19,6 +19,7 @@ import { GpxUpload } from './gpx-upload'
 import { LapTable } from './lap-table'
 import { ActivityMap } from './activity-map'
 import { ElevationChart } from './elevation-chart'
+import { LapPaceChart } from './lap-pace-chart'
 import { Button } from '~/components/ui/button'
 import {
   AlertDialog,
@@ -345,6 +346,8 @@ export function GpxEditor() {
         hoveredLapId={hoveredLapId}
         onHoverLap={setHoveredLapId}
       />
+
+      <LapPaceChart laps={laps} hoveredLapId={hoveredLapId} onHoverLap={setHoveredLapId} />
 
       <LapTable
         laps={laps}
