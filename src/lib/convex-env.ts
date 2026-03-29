@@ -2,6 +2,10 @@ function missingEnv(message: string): never {
   throw new Error(message)
 }
 
+function getServerEnv(name: string) {
+  return process.env[name]
+}
+
 export function getClientConvexUrl() {
   const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined
 
@@ -15,18 +19,24 @@ export function getClientConvexUrl() {
 }
 
 export function getServerConvexConfig() {
-  const convexUrl = process.env.VITE_CONVEX_URL
-  const convexSiteUrl = process.env.VITE_CONVEX_SITE_URL
+  const convexUrl =
+    getServerEnv('VITE_CONVEX_URL') ??
+    getServerEnv('CONVEX_URL') ??
+    (import.meta.env.VITE_CONVEX_URL as string | undefined)
+  const convexSiteUrl =
+    getServerEnv('VITE_CONVEX_SITE_URL') ??
+    getServerEnv('CONVEX_SITE_URL') ??
+    (import.meta.env.VITE_CONVEX_SITE_URL as string | undefined)
 
   if (!convexUrl) {
     return missingEnv(
-      'VITE_CONVEX_URL is not set. Run `pnpm convex:dev` and ensure `.env.local` is loaded by the TanStack Start server.',
+      'Convex URL is not set. Define `VITE_CONVEX_URL` or `CONVEX_URL` for the app server runtime.',
     )
   }
 
   if (!convexSiteUrl) {
     return missingEnv(
-      'VITE_CONVEX_SITE_URL is not set. Run `pnpm convex:dev` and ensure `.env.local` is loaded by the TanStack Start server.',
+      'Convex site URL is not set. Define `VITE_CONVEX_SITE_URL` or `CONVEX_SITE_URL` for the app server runtime.',
     )
   }
 
