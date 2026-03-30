@@ -41,7 +41,7 @@ export function ElevationChart({
 
 function ChartSkeleton() {
   return (
-    <div className="h-[300px] rounded-xl border border-border/60 bg-card/80 flex items-center justify-center text-muted-foreground">
+    <div className="h-[220px] sm:h-[300px] rounded-xl border border-border/60 bg-card/80 flex items-center justify-center text-muted-foreground">
       <AreaChart className="size-5 animate-pulse" />
     </div>
   )

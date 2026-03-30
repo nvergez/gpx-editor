@@ -68,7 +68,7 @@ export default function MapInner({ lapTracks, hoveredLapId, onHoverLap }: MapInn
   if (!bounds) return null
 
   return (
-    <div className="h-[400px] rounded-xl border border-border/60 overflow-hidden relative isolate z-0">
+    <div className="h-[280px] sm:h-[400px] rounded-xl border border-border/60 overflow-hidden relative isolate z-0">
       <MapContainer
         bounds={bounds}
         boundsOptions={FIT_OPTIONS}

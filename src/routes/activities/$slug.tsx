@@ -53,7 +53,6 @@ function ActivityPage() {
 }
 
 function ActivityEditor({ activity }: { activity: Doc<'activities'> }) {
-  const navigate = useNavigate()
   const [xmlContent, setXmlContent] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -125,10 +124,6 @@ function ActivityEditor({ activity }: { activity: Doc<'activities'> }) {
     [generateUploadUrlFn, updateActivityFn],
   )
 
-  const handleBack = useCallback(() => {
-    navigate({ to: '/' })
-  }, [navigate])
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -142,7 +137,7 @@ function ActivityEditor({ activity }: { activity: Doc<'activities'> }) {
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <p className="text-muted-foreground">{error ?? 'Activity not found'}</p>
         <button
-          onClick={handleBack}
+          onClick={() => window.history.back()}
           className="mt-4 text-sm text-primary underline underline-offset-2"
         >
           Go back
@@ -158,7 +153,6 @@ function ActivityEditor({ activity }: { activity: Doc<'activities'> }) {
       initialXml={xmlContent}
       source={activity.source}
       stravaActivityId={activity.stravaActivityId ?? undefined}
-      onBack={handleBack}
       onSave={handleSave}
     />
   )

@@ -13,10 +13,12 @@ import {
 } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { Activity } from 'lucide-react'
+import { ActivitySidebar } from '~/components/activity-sidebar'
 import { DefaultCatchBoundary } from '~/components/default-catch-boundary'
 import { NotFound } from '~/components/not-found'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '~/components/ui/sidebar'
 import { Toaster } from '~/components/ui/sonner'
-import { UserMenu } from '~/components/user-menu'
+import { TooltipProvider } from '~/components/ui/tooltip'
 import { authClient } from '~/lib/auth-client'
 import { getToken } from '~/lib/auth-server'
 import appCss from '~/styles/app.css?url'
@@ -69,34 +71,71 @@ function RootComponent() {
         authClient={authClient}
         initialToken={context.token}
       >
-        <html lang="en">
-          <head>
-            <HeadContent />
-          </head>
-          <body className="grain relative min-h-screen">
-            <header className="sticky top-0 z-40 border-b border-border/60 bg-card/60 backdrop-blur-md">
-              <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-4">
-                <Link to="/" className="flex items-center gap-2.5">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                    <Activity className="size-4.5 text-primary" />
-                  </div>
-                  <h1 className="font-serif text-xl tracking-tight text-foreground">GPX Editor</h1>
-                </Link>
-                <UserMenu />
-              </div>
-            </header>
-            <main className="mx-auto max-w-6xl px-6 py-8">
-              <Outlet />
-            </main>
-            <Toaster
-              toastOptions={{
-                className: 'font-sans',
-              }}
-            />
-            <Scripts />
-          </body>
-        </html>
+        <TooltipProvider>
+          <html lang="en">
+            <head>
+              <HeadContent />
+            </head>
+            <RootBody />
+          </html>
+        </TooltipProvider>
       </ConvexBetterAuthProvider>
     </QueryClientProvider>
+  )
+}
+
+function RootBody() {
+  const context = useRouteContext({ from: Route.id })
+  const { data: sessionData, isPending } = authClient.useSession()
+
+  // Use server-side auth during pending, client-side after resolved
+  const isAuthenticated = isPending ? context.isAuthenticated : !!sessionData?.session
+
+  return (
+    <body className="grain relative min-h-screen">
+      {isAuthenticated ? (
+        <SidebarProvider>
+          <ActivitySidebar />
+          <SidebarInset>
+            <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border/60 px-4 md:hidden">
+              <SidebarTrigger />
+              <Link to="/" className="flex items-center gap-2">
+                <div className="flex size-6 items-center justify-center rounded-md bg-primary/10">
+                  <Activity className="size-3.5 text-primary" />
+                </div>
+                <span className="font-serif text-base tracking-tight text-foreground">
+                  GPX Editor
+                </span>
+              </Link>
+            </header>
+            <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
+              <Outlet />
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
+      ) : (
+        <>
+          <header className="sticky top-0 z-40 border-b border-border/60 bg-card/60 backdrop-blur-md">
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-4">
+              <Link to="/" className="flex items-center gap-2.5">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+                  <Activity className="size-4.5 text-primary" />
+                </div>
+                <h1 className="font-serif text-xl tracking-tight text-foreground">GPX Editor</h1>
+              </Link>
+            </div>
+          </header>
+          <main className="mx-auto max-w-6xl px-6 py-8">
+            <Outlet />
+          </main>
+        </>
+      )}
+      <Toaster
+        toastOptions={{
+          className: 'font-sans',
+        }}
+      />
+      <Scripts />
+    </body>
   )
 }
