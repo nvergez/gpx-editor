@@ -59,10 +59,13 @@ import {
   Zap,
   Heart,
   Gauge,
+  Sparkles,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { StravaLogo } from '~/utils/strava'
 import { UndoManager } from '~/utils/undo-manager'
+import { useChatStore } from '~/lib/chat-store'
+import { ActivityChat } from './activity-chat'
 
 function downloadFile(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType })
@@ -310,6 +313,8 @@ export function GpxEditor({
   })
   const [crossFormatTarget, setCrossFormatTarget] = useState<'gpx' | 'tcx' | null>(null)
   const [hoveredLapId, setHoveredLapId] = useState<string | null>(null)
+  const chatOpen = useChatStore((s) => s.open)
+  const setChatOpen = useChatStore((s) => s.setOpen)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const laps = useMemo(() => {
@@ -317,6 +322,11 @@ export function GpxEditor({
     void revision
     return getLapHandles(actDoc)
   }, [actDoc, revision])
+
+  const lapsRef = useRef(laps)
+  useEffect(() => {
+    lapsRef.current = laps
+  }, [laps])
 
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
@@ -344,12 +354,10 @@ export function GpxEditor({
     setCanRedo(undoManagerRef.current.canRedo)
   }, [])
 
-  // After each revision, persist (laps recalculated via useMemo on next render)
+  // After each revision, persist using already-computed laps
   useEffect(() => {
     if (!actDoc || revision === 0) return
-    // Recompute laps directly for persistence (useMemo might not have run yet)
-    const currentLaps = getLapHandles(actDoc)
-    persistToConvex(actDoc, currentLaps)
+    persistToConvex(actDoc, lapsRef.current)
   }, [actDoc, revision, persistToConvex])
 
   // Cleanup timer on unmount
@@ -398,6 +406,16 @@ export function GpxEditor({
       if (!actDoc) return
       undoManagerRef.current.snapshot(actDoc)
       renameLap(actDoc, lapId, newName)
+      bumpRevision()
+    },
+    [actDoc, bumpRevision],
+  )
+
+  const handleRenameActivity = useCallback(
+    (newName: string) => {
+      if (!actDoc) return
+      undoManagerRef.current.snapshot(actDoc)
+      renameActivity(actDoc, newName)
       bumpRevision()
     },
     [actDoc, bumpRevision],
@@ -511,153 +529,210 @@ export function GpxEditor({
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {showGpxHint && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-chart-3/30 bg-chart-3/5 p-3 sm:p-4 text-sm text-foreground">
-          <Info className="mt-0.5 size-4 shrink-0 text-chart-3" />
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-xs sm:text-sm">Only 1 lap detected</p>
-            <p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-              GPX files often store all laps as a single track. Try importing the TCX version
-              instead.
-            </p>
+    <>
+      <div className="space-y-4 sm:space-y-6">
+        {showGpxHint && (
+          <div className="flex items-start gap-2.5 rounded-xl border border-chart-3/30 bg-chart-3/5 p-3 sm:p-4 text-sm text-foreground">
+            <Info className="mt-0.5 size-4 shrink-0 text-chart-3" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-xs sm:text-sm">Only 1 lap detected</p>
+              <p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
+                GPX files often store all laps as a single track. Try importing the TCX version
+                instead.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowGpxHint(false)}
+              className="shrink-0 rounded-md p-1 hover:bg-muted transition-colors"
+            >
+              <X className="size-3.5" />
+            </button>
           </div>
-          <button
-            onClick={() => setShowGpxHint(false)}
-            className="shrink-0 rounded-md p-1 hover:bg-muted transition-colors"
-          >
-            <X className="size-3.5" />
-          </button>
-        </div>
-      )}
+        )}
 
-      {/* Activity header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              {actDoc.sourceFormat.toUpperCase()} Activity
-            </p>
-            {source === 'strava' && stravaActivityId && (
-              <a
-                href={`https://www.strava.com/activities/${stravaActivityId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 rounded-full bg-[#FC4C02]/10 px-2 py-0.5 text-xs text-[#FC4C02] hover:bg-[#FC4C02]/20 transition-colors"
-                title="View on Strava"
-              >
-                <StravaLogo className="size-3" />
-                Strava
-              </a>
-            )}
+        {/* Activity header */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                {actDoc.sourceFormat.toUpperCase()} Activity
+              </p>
+              {source === 'strava' && stravaActivityId && (
+                <a
+                  href={`https://www.strava.com/activities/${stravaActivityId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded-full bg-[#FC4C02]/10 px-2 py-0.5 text-xs text-[#FC4C02] hover:bg-[#FC4C02]/20 transition-colors"
+                  title="View on Strava"
+                >
+                  <StravaLogo className="size-3" />
+                  Strava
+                </a>
+              )}
+            </div>
+            <ActivityNameEditor name={actDoc.name} onRename={handleRenameActivity} />
           </div>
-          <ActivityNameEditor
-            name={actDoc.name}
-            onRename={(newName) => {
-              undoManagerRef.current.snapshot(actDoc)
-              renameActivity(actDoc, newName)
-              bumpRevision()
-            }}
-          />
-        </div>
-        <div className="flex gap-1.5 sm:gap-2 shrink-0 pt-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={handleUndo}
-            disabled={!canUndo}
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo2 className="size-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={handleRedo}
-            disabled={!canRedo}
-            title="Redo (Ctrl+Shift+Z)"
-          >
-            <Redo2 className="size-3.5" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button size="sm" />}>
-              <FileDown className="size-3.5" />
-              <span className="hidden sm:inline">Export</span>
-              <ChevronDown className="size-3" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportOriginal}>
-                Export as {actDoc.sourceFormat.toUpperCase()} (original)
-              </DropdownMenuItem>
-              {actDoc.sourceFormat !== 'gpx' && (
-                <DropdownMenuItem onClick={() => handleExportCrossFormat('gpx')}>
-                  Export as GPX
+          <div className="flex gap-1.5 sm:gap-2 shrink-0 pt-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={handleUndo}
+              disabled={!canUndo}
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={handleRedo}
+              disabled={!canRedo}
+              title="Redo (Ctrl+Shift+Z)"
+            >
+              <Redo2 className="size-3.5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button size="sm" />}>
+                <FileDown className="size-3.5" />
+                <span className="hidden sm:inline">Export</span>
+                <ChevronDown className="size-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportOriginal}>
+                  Export as {actDoc.sourceFormat.toUpperCase()} (original)
                 </DropdownMenuItem>
-              )}
-              {actDoc.sourceFormat !== 'tcx' && (
-                <DropdownMenuItem onClick={() => handleExportCrossFormat('tcx')}>
-                  Export as TCX
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {actDoc.sourceFormat !== 'gpx' && (
+                  <DropdownMenuItem onClick={() => handleExportCrossFormat('gpx')}>
+                    Export as GPX
+                  </DropdownMenuItem>
+                )}
+                {actDoc.sourceFormat !== 'tcx' && (
+                  <DropdownMenuItem onClick={() => handleExportCrossFormat('tcx')}>
+                    Export as TCX
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        <ActivityStats laps={laps} />
+
+        <ActivityMap
+          laps={laps}
+          sourceFormat={actDoc.sourceFormat}
+          revision={revision}
+          hoveredLapId={hoveredLapId}
+          onHoverLap={setHoveredLapId}
+        />
+
+        <ElevationChart
+          laps={laps}
+          sourceFormat={actDoc.sourceFormat}
+          revision={revision}
+          hoveredLapId={hoveredLapId}
+          onHoverLap={setHoveredLapId}
+        />
+
+        <LapPaceChart laps={laps} hoveredLapId={hoveredLapId} onHoverLap={setHoveredLapId} />
+
+        <LapTable
+          laps={laps}
+          sourceFormat={actDoc.sourceFormat}
+          onDelete={handleDeleteLap}
+          onSplit={handleSplitLap}
+          onMerge={handleMergeLaps}
+          onRename={handleRenameLap}
+          onReorder={handleReorderLaps}
+          hoveredLapId={hoveredLapId}
+          onHoverLap={setHoveredLapId}
+        />
+
+        <AlertDialog
+          open={crossFormatTarget !== null}
+          onOpenChange={(open) => !open && setCrossFormatTarget(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Convert to {crossFormatTarget?.toUpperCase()}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Converting from {actDoc.sourceFormat.toUpperCase()} to{' '}
+                {crossFormatTarget?.toUpperCase()} will lose some data that has no equivalent in the
+                target format
+                {actDoc.sourceFormat === 'tcx' && ' (calories, lap summaries, device info, etc.)'}
+                {actDoc.sourceFormat === 'gpx' && ' (track type, description, links, etc.)'}. Use
+                "Export as {actDoc.sourceFormat.toUpperCase()} (original)" for a lossless export.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmCrossFormat}>
+                Export anyway
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
-      <ActivityStats laps={laps} />
-
-      <ActivityMap
-        laps={laps}
-        sourceFormat={actDoc.sourceFormat}
-        revision={revision}
-        hoveredLapId={hoveredLapId}
-        onHoverLap={setHoveredLapId}
-      />
-
-      <ElevationChart
-        laps={laps}
-        sourceFormat={actDoc.sourceFormat}
-        revision={revision}
-        hoveredLapId={hoveredLapId}
-        onHoverLap={setHoveredLapId}
-      />
-
-      <LapPaceChart laps={laps} hoveredLapId={hoveredLapId} onHoverLap={setHoveredLapId} />
-
-      <LapTable
-        laps={laps}
-        sourceFormat={actDoc.sourceFormat}
-        onDelete={handleDeleteLap}
-        onSplit={handleSplitLap}
-        onMerge={handleMergeLaps}
-        onRename={handleRenameLap}
-        onReorder={handleReorderLaps}
-        hoveredLapId={hoveredLapId}
-        onHoverLap={setHoveredLapId}
-      />
-
-      <AlertDialog
-        open={crossFormatTarget !== null}
-        onOpenChange={(open) => !open && setCrossFormatTarget(null)}
+      {/* Floating chat button (mobile + desktop when closed) */}
+      <button
+        onClick={() => setChatOpen(true)}
+        className={`fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:bg-primary/90 transition-all duration-200 ${
+          chatOpen
+            ? 'lg:scale-0 lg:opacity-0 lg:pointer-events-none'
+            : 'lg:scale-100 lg:opacity-100'
+        }`}
+        title="AI Assistant"
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Convert to {crossFormatTarget?.toUpperCase()}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Converting from {actDoc.sourceFormat.toUpperCase()} to{' '}
-              {crossFormatTarget?.toUpperCase()} will lose some data that has no equivalent in the
-              target format
-              {actDoc.sourceFormat === 'tcx' && ' (calories, lap summaries, device info, etc.)'}
-              {actDoc.sourceFormat === 'gpx' && ' (track type, description, links, etc.)'}. Use
-              "Export as {actDoc.sourceFormat.toUpperCase()} (original)" for a lossless export.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmCrossFormat}>Export anyway</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        <span className="flex items-center justify-center size-12">
+          <Sparkles className="size-5" />
+        </span>
+        <span className="hidden sm:inline pr-4 text-sm font-medium -ml-1.5">AI</span>
+      </button>
+
+      {chatOpen && (
+        <>
+          {/* Desktop: fixed right panel */}
+          <div className="hidden lg:flex fixed top-0 right-0 z-40 h-screen w-[380px] flex-col border-l border-border/60 bg-card shadow-lg">
+            <ActivityChat
+              actDoc={actDoc}
+              revision={revision}
+              laps={laps}
+              onClose={() => setChatOpen(false)}
+              onRenameActivity={handleRenameActivity}
+              onRenameLap={handleRenameLap}
+              onDeleteLap={handleDeleteLap}
+              onSplitLap={handleSplitLap}
+              onMergeLaps={handleMergeLaps}
+            />
+          </div>
+
+          {/* Mobile: bottom sheet */}
+          <div className="lg:hidden fixed inset-0 z-50 animate-in fade-in duration-200">
+            <div
+              className="absolute inset-0 bg-black/20 backdrop-blur-xs"
+              onClick={() => setChatOpen(false)}
+            />
+            <div className="absolute inset-x-0 bottom-0 h-[85vh] bg-card border-t border-border/60 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300">
+              {/* Drag handle */}
+              <div className="flex justify-center pt-2.5 pb-0.5">
+                <div className="w-8 h-1 rounded-full bg-muted-foreground/20" />
+              </div>
+              <ActivityChat
+                actDoc={actDoc}
+                revision={revision}
+                laps={laps}
+                onClose={() => setChatOpen(false)}
+                onRenameActivity={handleRenameActivity}
+                onRenameLap={handleRenameLap}
+                onDeleteLap={handleDeleteLap}
+                onSplitLap={handleSplitLap}
+                onMergeLaps={handleMergeLaps}
+              />
+            </div>
+          </div>
+        </>
+      )}
+    </>
   )
 }

@@ -5,6 +5,7 @@ import { useConvexMutation, convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
 import type { Id, Doc } from '../../convex/_generated/dataModel'
 import { toast } from 'sonner'
+import { useChatStore } from '~/lib/chat-store'
 import {
   Activity,
   Plus,
@@ -18,6 +19,7 @@ import {
   ChevronsUpDown,
   Settings,
   LogOut,
+  Sparkles,
 } from 'lucide-react'
 import { formatDistance, formatDuration } from '~/utils/gpx-parser'
 import { sportIcon, formatActivityDate } from '~/utils/activity-formatting'
@@ -132,6 +134,8 @@ export function ActivitySidebar() {
     setEditingId(null)
   }, [editingId, editValue, renameActivity])
 
+  const isOnActivityPage = Boolean(currentSlug)
+
   const handleSearchSelect = useCallback(
     (slug: string) => {
       setSearchOpen(false)
@@ -139,6 +143,13 @@ export function ActivitySidebar() {
     },
     [navigate],
   )
+
+  const toggleChat = useChatStore((s) => s.toggle)
+
+  const handleToggleChat = useCallback(() => {
+    setSearchOpen(false)
+    toggleChat()
+  }, [toggleChat])
 
   return (
     <>
@@ -301,6 +312,14 @@ export function ActivitySidebar() {
             <CommandInput placeholder="Search activities…" />
             <CommandList>
               <CommandEmpty>No activities found.</CommandEmpty>
+              {isOnActivityPage && (
+                <CommandGroup heading="Actions">
+                  <CommandItem onSelect={handleToggleChat} className="gap-3">
+                    <Sparkles className="size-4 text-primary" />
+                    <span className="text-sm">Toggle AI Chat</span>
+                  </CommandItem>
+                </CommandGroup>
+              )}
               <CommandGroup heading="Activities">
                 {activities.map((activity) => (
                   <CommandItem

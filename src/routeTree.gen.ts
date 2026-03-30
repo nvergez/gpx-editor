@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StravaCallbackRouteImport } from './routes/strava/callback'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ActivitiesSlugRouteImport } from './routes/activities/$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const StravaCallbackRoute = StravaCallbackRouteImport.update({
   id: '/strava/callback',
   path: '/strava/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivitiesSlugRoute = ActivitiesSlugRouteImport.update({
@@ -38,12 +44,14 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activities/$slug': typeof ActivitiesSlugRoute
+  '/api/chat': typeof ApiChatRoute
   '/strava/callback': typeof StravaCallbackRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activities/$slug': typeof ActivitiesSlugRoute
+  '/api/chat': typeof ApiChatRoute
   '/strava/callback': typeof StravaCallbackRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -51,18 +59,30 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activities/$slug': typeof ActivitiesSlugRoute
+  '/api/chat': typeof ApiChatRoute
   '/strava/callback': typeof StravaCallbackRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/activities/$slug' | '/strava/callback' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/activities/$slug'
+    | '/api/chat'
+    | '/strava/callback'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/activities/$slug' | '/strava/callback' | '/api/auth/$'
+  to:
+    | '/'
+    | '/activities/$slug'
+    | '/api/chat'
+    | '/strava/callback'
+    | '/api/auth/$'
   id:
     | '__root__'
     | '/'
     | '/activities/$slug'
+    | '/api/chat'
     | '/strava/callback'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -70,6 +90,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivitiesSlugRoute: typeof ActivitiesSlugRoute
+  ApiChatRoute: typeof ApiChatRoute
   StravaCallbackRoute: typeof StravaCallbackRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -88,6 +109,13 @@ declare module '@tanstack/react-router' {
       path: '/strava/callback'
       fullPath: '/strava/callback'
       preLoaderRoute: typeof StravaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/activities/$slug': {
@@ -110,6 +138,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivitiesSlugRoute: ActivitiesSlugRoute,
+  ApiChatRoute: ApiChatRoute,
   StravaCallbackRoute: StravaCallbackRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
