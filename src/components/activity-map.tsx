@@ -61,7 +61,7 @@ export function ActivityMap({
 
 function MapSkeleton() {
   return (
-    <div className="h-[400px] rounded-xl border border-border/60 bg-card/80 flex items-center justify-center text-muted-foreground">
+    <div className="h-[280px] sm:h-[400px] rounded-xl border border-border/60 bg-card/80 flex items-center justify-center text-muted-foreground">
       <MapIcon className="size-5 animate-pulse" />
     </div>
   )

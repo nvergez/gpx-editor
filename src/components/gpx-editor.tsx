@@ -3,7 +3,13 @@ import { toast } from 'sonner'
 import type { Id } from '../../convex/_generated/dataModel'
 import type { ActivityDocument } from '~/utils/dom-model'
 import type { LapHandle } from '~/utils/dom-model'
-import { exportGpx, exportTcx } from '~/utils/gpx-parser'
+import {
+  exportGpx,
+  exportTcx,
+  formatDistance,
+  formatDuration,
+  formatPace,
+} from '~/utils/gpx-parser'
 import {
   parseToDocument,
   getLapHandles,
@@ -39,7 +45,6 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import {
-  RotateCcw,
   ChevronDown,
   Info,
   X,
@@ -48,7 +53,14 @@ import {
   Redo2,
   Pencil,
   Check,
+  Route,
+  Clock,
+  Mountain,
+  Zap,
+  Heart,
+  Gauge,
 } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import { StravaLogo } from '~/utils/strava'
 import { UndoManager } from '~/utils/undo-manager'
 
@@ -158,12 +170,112 @@ function ActivityNameEditor({
   )
 }
 
+function ActivityStats({ laps }: { laps: LapHandle[] }) {
+  const summary = useMemo(() => {
+    let distance = 0
+    let duration = 0
+    let elevationGain = 0
+    let hrSum = 0
+    let hrCount = 0
+    let maxHr = 0
+    let powerSum = 0
+    let powerCount = 0
+
+    for (const lap of laps) {
+      distance += lap.stats.distance
+      duration += lap.stats.duration
+      elevationGain += lap.stats.elevationGain ?? 0
+      if (lap.stats.avgHr) {
+        hrSum += lap.stats.avgHr * lap.stats.duration
+        hrCount += lap.stats.duration
+      }
+      if (lap.stats.maxHr && lap.stats.maxHr > maxHr) maxHr = lap.stats.maxHr
+      if (lap.stats.avgPower) {
+        powerSum += lap.stats.avgPower * lap.stats.duration
+        powerCount += lap.stats.duration
+      }
+    }
+
+    return {
+      distance,
+      duration,
+      elevationGain,
+      avgHr: hrCount > 0 ? Math.round(hrSum / hrCount) : undefined,
+      maxHr: maxHr > 0 ? maxHr : undefined,
+      avgPower: powerCount > 0 ? Math.round(powerSum / powerCount) : undefined,
+      lapCount: laps.length,
+    }
+  }, [laps])
+
+  const stats: { icon: typeof Route; label: string; value: string }[] = [
+    { icon: Route, label: 'Distance', value: formatDistance(summary.distance) },
+    { icon: Clock, label: 'Duration', value: formatDuration(summary.duration) },
+    { icon: Gauge, label: 'Pace', value: formatPace(summary.distance, summary.duration) },
+  ]
+  if (summary.elevationGain > 0) {
+    stats.push({
+      icon: Mountain,
+      label: 'Elevation',
+      value: `${Math.round(summary.elevationGain)} m`,
+    })
+  }
+  if (summary.avgHr) {
+    stats.push({
+      icon: Heart,
+      label: 'Avg HR',
+      value: `${summary.avgHr} bpm`,
+    })
+  }
+  if (summary.avgPower) {
+    stats.push({
+      icon: Zap,
+      label: 'Avg Power',
+      value: `${summary.avgPower} W`,
+    })
+  }
+
+  return (
+    <>
+      {/* Mobile: compact text grid */}
+      <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:hidden">
+        {stats.map((stat) => (
+          <div key={stat.label} className="min-w-0">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+              {stat.label}
+            </p>
+            <p className="text-sm font-semibold tabular-nums text-foreground truncate">
+              {stat.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: cards */}
+      <div className="hidden sm:flex sm:flex-wrap sm:gap-3">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-card/50 px-4 py-3"
+          >
+            <stat.icon className="size-4 shrink-0 text-muted-foreground/60" strokeWidth={1.5} />
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                {stat.label}
+              </p>
+              <p className="text-sm font-semibold tabular-nums text-foreground">{stat.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
 interface GpxEditorProps {
   activityId: Id<'activities'>
   initialXml: string
   source: 'file' | 'strava'
   stravaActivityId?: number
-  onBack: () => void
   onSave: (data: {
     activityId: Id<'activities'>
     xmlContent: string
@@ -180,7 +292,6 @@ export function GpxEditor({
   initialXml,
   source,
   stravaActivityId,
-  onBack,
   onSave,
 }: GpxEditorProps) {
   const [actDoc] = useState<ActivityDocument | null>(() => {
@@ -389,23 +500,26 @@ export function GpxEditor({
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <p className="text-muted-foreground">Failed to parse activity data.</p>
-        <Button variant="ghost" size="sm" className="mt-4" onClick={onBack}>
+        <Link
+          to="/"
+          className="mt-4 text-sm text-primary underline underline-offset-2 hover:text-primary/80"
+        >
           Go back
-        </Button>
+        </Link>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {showGpxHint && (
-        <div className="flex items-start gap-3 rounded-xl border border-chart-3/30 bg-chart-3/5 p-4 text-sm text-foreground">
+        <div className="flex items-start gap-2.5 rounded-xl border border-chart-3/30 bg-chart-3/5 p-3 sm:p-4 text-sm text-foreground">
           <Info className="mt-0.5 size-4 shrink-0 text-chart-3" />
-          <div className="flex-1">
-            <p className="font-medium">Only 1 lap detected</p>
-            <p className="mt-0.5 text-muted-foreground">
-              GPX files often merge all laps into a single track. If your activity has multiple
-              laps, try importing the TCX version instead to preserve lap data.
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-xs sm:text-sm">Only 1 lap detected</p>
+            <p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
+              GPX files often store all laps as a single track. Try importing the TCX version
+              instead.
             </p>
           </div>
           <button
@@ -418,8 +532,8 @@ export function GpxEditor({
       )}
 
       {/* Activity header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div className="space-y-1">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
               {actDoc.sourceFormat.toUpperCase()} Activity
@@ -445,14 +559,11 @@ export function GpxEditor({
               bumpRevision()
             }}
           />
-          <p className="text-sm text-muted-foreground">
-            {laps.length} lap{laps.length !== 1 ? 's' : ''}
-          </p>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex gap-1.5 sm:gap-2 shrink-0 pt-1">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon-sm"
             onClick={handleUndo}
             disabled={!canUndo}
             title="Undo (Ctrl+Z)"
@@ -461,21 +572,17 @@ export function GpxEditor({
           </Button>
           <Button
             variant="ghost"
-            size="sm"
+            size="icon-sm"
             onClick={handleRedo}
             disabled={!canRedo}
             title="Redo (Ctrl+Shift+Z)"
           >
             <Redo2 className="size-3.5" />
           </Button>
-          <Button variant="ghost" onClick={onBack} size="sm">
-            <RotateCcw className="size-3.5" />
-            Back
-          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button size="sm" />}>
               <FileDown className="size-3.5" />
-              Export
+              <span className="hidden sm:inline">Export</span>
               <ChevronDown className="size-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -496,6 +603,8 @@ export function GpxEditor({
           </DropdownMenu>
         </div>
       </div>
+
+      <ActivityStats laps={laps} />
 
       <ActivityMap
         laps={laps}

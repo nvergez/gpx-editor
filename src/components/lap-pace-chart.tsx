@@ -129,7 +129,7 @@ export function LapPaceChart({ laps, hoveredLapId, onHoverLap }: LapPaceChartPro
   if (barData.length < 2) return null
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+    <div className="rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4">
       <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
         Pace per Lap
       </p>

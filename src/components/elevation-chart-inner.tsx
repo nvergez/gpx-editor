@@ -237,7 +237,7 @@ export default function ElevationChartInner({
   const textColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)'
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/80 p-4">
+    <div className="rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4">
       {/* Series toggles */}
       {availableSeries.length > 1 && (
         <div className="mb-3 flex items-center gap-1.5">
