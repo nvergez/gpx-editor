@@ -458,7 +458,7 @@ export function LapTable({
 
   return (
     <>
-      <div className="rounded-xl border border-border/60 bg-card/80 overflow-hidden">
+      <div className="rounded-xl border border-border/60 bg-card/80 overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -490,30 +490,31 @@ export function LapTable({
             {table.getRowModel().rows.map((row) => {
               const isHovered = hoveredLapId === row.original.id
               return (
-              <TableRow
-                key={row.id}
-                className={`group border-border/40 transition-colors ${isHovered ? 'bg-primary/5 dark:bg-primary/10' : 'hover:bg-warm-50/50 dark:hover:bg-warm-800/20'}`}
-                onMouseEnter={() => onHoverLap?.(row.original.id)}
-                onMouseLeave={() => onHoverLap?.(null)}
-              >
-                {row.getVisibleCells().map((cell) => {
-                  const align = (cell.column.columnDef.meta as { align?: string })?.align ?? 'left'
-                  const stickyClass =
-                    cell.column.id === 'index'
-                      ? 'sticky left-0 z-10 bg-card group-hover:bg-warm-50/50 dark:group-hover:bg-warm-800/20 transition-colors'
-                      : cell.column.id === 'actions'
-                        ? 'sticky right-0 bg-card group-hover:bg-warm-50/50 dark:group-hover:bg-warm-800/20 transition-colors'
-                        : ''
-                  return (
-                    <TableCell
-                      key={cell.id}
-                      className={`text-sm ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''} ${stickyClass}`}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  )
-                })}
-              </TableRow>
+                <TableRow
+                  key={row.id}
+                  className={`group border-border/40 transition-colors ${isHovered ? 'bg-primary/5 dark:bg-primary/10' : 'hover:bg-warm-50/50 dark:hover:bg-warm-800/20'}`}
+                  onMouseEnter={() => onHoverLap?.(row.original.id)}
+                  onMouseLeave={() => onHoverLap?.(null)}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const align =
+                      (cell.column.columnDef.meta as { align?: string })?.align ?? 'left'
+                    const stickyClass =
+                      cell.column.id === 'index'
+                        ? 'sticky left-0 z-10 bg-card group-hover:bg-warm-50/50 dark:group-hover:bg-warm-800/20 transition-colors'
+                        : cell.column.id === 'actions'
+                          ? 'sticky right-0 bg-card group-hover:bg-warm-50/50 dark:group-hover:bg-warm-800/20 transition-colors'
+                          : ''
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={`text-sm ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''} ${stickyClass}`}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    )
+                  })}
+                </TableRow>
               )
             })}
           </TableBody>
