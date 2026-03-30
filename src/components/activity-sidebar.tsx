@@ -33,6 +33,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarSeparator,
+  useSidebar,
 } from '~/components/ui/sidebar'
 import {
   DropdownMenu,
@@ -55,9 +56,15 @@ import { authClient } from '~/lib/auth-client'
 
 export function ActivitySidebar() {
   const navigate = useNavigate()
+  const { setOpenMobile } = useSidebar()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const slugMatch = pathname.match(/^\/activities\/([^/]+)/)
   const currentSlug = slugMatch?.[1]
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    setOpenMobile(false)
+  }, [pathname, setOpenMobile])
   const isOnHome = pathname === '/'
 
   const { data: activities } = useQuery(convexQuery(api.activities.list, {}))
@@ -355,7 +362,7 @@ function SidebarUserFooter() {
       toast.error(result.error.message ?? 'Unable to sign out')
       return
     }
-    window.location.reload()
+    window.location.href = '/'
   }
 
   return (

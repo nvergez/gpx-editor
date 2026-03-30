@@ -128,45 +128,53 @@ export function LapPaceChart({ laps, hoveredLapId, onHoverLap }: LapPaceChartPro
 
   if (barData.length < 2) return null
 
+  const chartMinWidth = barData.length * 48 + 60
+
   return (
     <div className="rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4">
       <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
         Pace per Lap
       </p>
-      <ResponsiveContainer width="100%" height={180}>
-        <BarChart
-          data={barData}
-          margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-        >
-          <XAxis
-            dataKey="index"
-            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis
-            domain={[0, 'dataMax']}
-            tickFormatter={(value: number) => paceTickFormatter(ceiling - value)}
-            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
-            tickLine={false}
-            axisLine={false}
-            width={48}
-          />
-          <Tooltip content={<CustomTooltip />} cursor={false} />
-          <Bar dataKey="barValue" radius={[3, 3, 0, 0]} maxBarSize={64}>
-            {barData.map((entry) => (
-              <Cell
-                key={entry.lapId}
-                fill="var(--chart-2)"
-                fillOpacity={hoveredLapId === null ? 0.85 : entry.lapId === hoveredLapId ? 1 : 0.3}
-                className="transition-[fill-opacity] duration-150"
+      <div className="-mx-3 sm:-mx-4 overflow-x-auto px-3 sm:px-4">
+        <div style={{ minWidth: chartMinWidth }}>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart
+              data={barData}
+              margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+            >
+              <XAxis
+                dataKey="index"
+                tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                tickLine={false}
+                axisLine={false}
               />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+              <YAxis
+                domain={[0, 'dataMax']}
+                tickFormatter={(value: number) => paceTickFormatter(ceiling - value)}
+                tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                tickLine={false}
+                axisLine={false}
+                width={48}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={false} />
+              <Bar dataKey="barValue" radius={[3, 3, 0, 0]} maxBarSize={64}>
+                {barData.map((entry) => (
+                  <Cell
+                    key={entry.lapId}
+                    fill="var(--chart-2)"
+                    fillOpacity={
+                      hoveredLapId === null ? 0.85 : entry.lapId === hoveredLapId ? 1 : 0.3
+                    }
+                    className="transition-[fill-opacity] duration-150"
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   )
 }
