@@ -11,6 +11,9 @@ A browser-based editor for GPX and TCX activity files. Upload a file, edit laps 
 - **Reorder & delete laps**
 - **Undo / redo** — full undo/redo support for all lap mutations
 - **Cross-format export** — convert GPX to TCX or vice versa (lossy, with confirmation)
+- **AI chat assistant** — "Trail Companion" lets you edit activities via natural language (rename, split, merge, delete laps); destructive actions require approval
+- **Custom columns** — add manual data columns or computed columns with formulas (divide, multiply, add, subtract) to the lap table; column definitions are shared across activities
+- **CSV export** — export lap data including custom column values
 - **Interactive map** — per-lap track visualization on an interactive map
 - **Charts** — elevation, heart rate, and pace charts plus a lap pace bar chart
 - **Strava import** — OAuth-based Strava activity picker to import activities directly
