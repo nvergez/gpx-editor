@@ -7,7 +7,6 @@ import type { Id, Doc } from '../../convex/_generated/dataModel'
 import { toast } from 'sonner'
 import { useChatStore } from '~/lib/chat-store'
 import {
-  Activity,
   Plus,
   Pencil,
   Trash2,
@@ -156,11 +155,14 @@ export function ActivitySidebar() {
       <Sidebar collapsible="offcanvas">
         <SidebarHeader className="px-4 pt-4 pb-2">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
-              <Activity className="size-4 text-primary" />
-            </div>
+            <img src="/logo.png" alt="Lapcraft" className="size-7 rounded-lg dark:block hidden" />
+            <img
+              src="/logo-light.png"
+              alt="Lapcraft"
+              className="size-7 rounded-lg dark:hidden block"
+            />
             <span className="font-serif text-lg tracking-tight text-sidebar-foreground">
-              GPX Editor
+              Lapcraft
             </span>
           </Link>
 

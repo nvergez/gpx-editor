@@ -71,9 +71,7 @@ function AuthForm() {
             {mode === 'sign-in' ? 'Welcome back' : 'Create account'}
           </h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            {mode === 'sign-in'
-              ? 'Sign in to edit your GPX & TCX files'
-              : 'Get started with the GPX editor'}
+            {mode === 'sign-in' ? 'Sign in to your Lapcraft account' : 'Get started with Lapcraft'}
           </p>
         </div>
 

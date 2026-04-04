@@ -12,7 +12,6 @@ import {
   useRouteContext,
 } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { Activity } from 'lucide-react'
 import { ActivitySidebar } from '~/components/activity-sidebar'
 import { DefaultCatchBoundary } from '~/components/default-catch-boundary'
 import { NotFound } from '~/components/not-found'
@@ -35,8 +34,8 @@ export const Route = createRootRouteWithContext<{
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       ...seo({
-        title: 'GPX Editor',
-        description: 'Load, visualize, and edit GPX laps',
+        title: 'Lapcraft',
+        description: 'Analyze, edit, and craft your activity laps',
       }),
     ],
     links: [
@@ -100,11 +99,18 @@ function RootBody() {
             <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border/60 px-4 md:hidden">
               <SidebarTrigger />
               <Link to="/" className="flex items-center gap-2">
-                <div className="flex size-6 items-center justify-center rounded-md bg-primary/10">
-                  <Activity className="size-3.5 text-primary" />
-                </div>
+                <img
+                  src="/logo.png"
+                  alt="Lapcraft"
+                  className="size-6 rounded-md dark:block hidden"
+                />
+                <img
+                  src="/logo-light.png"
+                  alt="Lapcraft"
+                  className="size-6 rounded-md dark:hidden block"
+                />
                 <span className="font-serif text-base tracking-tight text-foreground">
-                  GPX Editor
+                  Lapcraft
                 </span>
               </Link>
             </header>
@@ -118,10 +124,17 @@ function RootBody() {
           <header className="sticky top-0 z-40 border-b border-border/60 bg-card/60 backdrop-blur-md">
             <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-4">
               <Link to="/" className="flex items-center gap-2.5">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                  <Activity className="size-4.5 text-primary" />
-                </div>
-                <h1 className="font-serif text-xl tracking-tight text-foreground">GPX Editor</h1>
+                <img
+                  src="/logo.png"
+                  alt="Lapcraft"
+                  className="size-8 rounded-lg dark:block hidden"
+                />
+                <img
+                  src="/logo-light.png"
+                  alt="Lapcraft"
+                  className="size-8 rounded-lg dark:hidden block"
+                />
+                <h1 className="font-serif text-xl tracking-tight text-foreground">Lapcraft</h1>
               </Link>
             </div>
           </header>

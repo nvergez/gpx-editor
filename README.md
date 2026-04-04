@@ -1,6 +1,10 @@
-# GPX Editor
+<p align="center">
+  <img src="public/logo.png" width="120" alt="Lapcraft logo" />
+</p>
 
-A browser-based editor for GPX and TCX activity files. Upload a file, edit laps (split, merge, rename, reorder, delete), and export — all without losing any original XML data.
+# Lapcraft
+
+A browser-based tool for analyzing, editing, and crafting your activity laps. Upload GPX/TCX files, edit laps (split, merge, rename, reorder, delete), and export — all without losing any original XML data.
 
 ## Features
 

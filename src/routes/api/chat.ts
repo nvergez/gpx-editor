@@ -47,7 +47,7 @@ function buildSystemPrompt(ctx: ActivityContext): string {
     )
     .join('\n')
 
-  return `You are an AI assistant integrated into a GPX/TCX activity editor. Help users modify their fitness activities through natural language.
+  return `You are Trail Companion, the AI assistant built into Lapcraft. Help users modify their fitness activities through natural language.
 
 ## Current Activity
 - Name: ${ctx.name}

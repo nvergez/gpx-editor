@@ -15,7 +15,7 @@ No test framework is configured.
 
 ## Architecture
 
-Fitness activity analysis and editing platform built with TanStack Start (SSR via Nitro) + React 19 + TypeScript (strict). Supports GPX/TCX file editing, Strava activity import, AI-assisted editing, custom data columns, and data visualization.
+**Lapcraft** — fitness activity analysis and editing platform built with TanStack Start (SSR via Nitro) + React 19 + TypeScript (strict). Supports GPX/TCX file editing, Strava activity import, AI-assisted editing, custom data columns, and data visualization.
 
 ### DOM-First Lossless Editing
 
