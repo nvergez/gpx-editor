@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import {
   flexRender,
   getCoreRowModel,
@@ -9,7 +9,16 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table'
 import type { LapHandle } from '~/utils/dom-model'
+import type { Id } from '../../convex/_generated/dataModel'
 import { formatDistance, formatDuration, formatPace, formatSpeed } from '~/utils/gpx-parser'
+import type { ColumnDefinition, ActivityColumn, ColumnValue } from '~/utils/custom-columns'
+import {
+  evaluateFormula,
+  formatComputedValue,
+  buildValueLookup,
+  getSortedActivityColumns,
+  getManualValuesForLap,
+} from '~/utils/custom-columns'
 import {
   Table,
   TableHeader,
@@ -52,6 +61,14 @@ import {
   ArrowDown,
 } from 'lucide-react'
 
+export interface CustomColumnConfig {
+  definitions: ColumnDefinition[]
+  activityColumns: ActivityColumn[]
+  values: ColumnValue[]
+  onSetValue: (columnId: Id<'columnDefinitions'>, lapId: string, value: number) => void
+  onClearValue: (columnId: Id<'columnDefinitions'>, lapId: string) => void
+}
+
 interface LapTableProps {
   laps: LapHandle[]
   sourceFormat: 'gpx' | 'tcx'
@@ -62,6 +79,8 @@ interface LapTableProps {
   onReorder: (laps: LapHandle[]) => void
   hoveredLapId?: string | null
   onHoverLap?: (lapId: string | null) => void
+  customColumns?: CustomColumnConfig
+  builtinVisibilityOverride?: Record<string, boolean>
 }
 
 function SortableHeader({
@@ -89,6 +108,70 @@ function SortableHeader({
   )
 }
 
+function InlineNumberInput({
+  value,
+  onCommit,
+  onClear,
+}: {
+  value: number | undefined
+  onCommit: (v: number) => void
+  onClear: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [text, setText] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [editing])
+
+  function startEdit() {
+    setText(value != null ? String(value) : '')
+    setEditing(true)
+  }
+
+  function commit() {
+    const trimmed = text.trim()
+    if (trimmed === '') {
+      onClear()
+    } else {
+      const num = Number(trimmed)
+      if (!isNaN(num)) onCommit(num)
+    }
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <Input
+        ref={inputRef}
+        type="number"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') setEditing(false)
+        }}
+        onBlur={commit}
+        className="h-6 w-20 text-xs tabular-nums text-right px-1.5"
+      />
+    )
+  }
+
+  return (
+    <button
+      onClick={startEdit}
+      className="tabular-nums text-sm min-w-[3rem] text-right block w-full hover:bg-muted/50 rounded px-1 py-0.5 transition-colors"
+      title="Click to edit"
+    >
+      {value != null ? value : <span className="text-muted-foreground/40">—</span>}
+    </button>
+  )
+}
+
 export function LapTable({
   laps,
   sourceFormat,
@@ -99,6 +182,8 @@ export function LapTable({
   onReorder,
   hoveredLapId,
   onHoverLap,
+  customColumns,
+  builtinVisibilityOverride,
 }: LapTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [editingLapId, setEditingLapId] = useState<string | null>(null)
@@ -140,7 +225,7 @@ export function LapTable({
 
   const columnVisibility = useMemo<VisibilityState>(() => {
     const has = (key: keyof LapHandle['stats']) => laps.some((l) => l.stats[key] != null)
-    return {
+    const auto: VisibilityState = {
       avgHr: has('avgHr'),
       maxHr: has('maxHr'),
       avgCadence: has('avgCadence'),
@@ -150,7 +235,30 @@ export function LapTable({
       elevationGain: has('elevationGain'),
       elevationLoss: has('elevationLoss'),
     }
-  }, [laps])
+    // Apply user overrides (only if explicitly set)
+    if (builtinVisibilityOverride) {
+      for (const [key, val] of Object.entries(builtinVisibilityOverride)) {
+        auto[key] = val
+      }
+    }
+    return auto
+  }, [laps, builtinVisibilityOverride])
+
+  const valueLookup = useMemo(
+    () =>
+      customColumns
+        ? buildValueLookup(customColumns.values)
+        : new Map<string, Map<string, number>>(),
+    [customColumns],
+  )
+
+  const sortedCustomCols = useMemo(
+    () =>
+      customColumns
+        ? getSortedActivityColumns(customColumns.activityColumns, customColumns.definitions)
+        : [],
+    [customColumns],
+  )
 
   // Column definitions use plain objects (not createColumnHelper) to avoid
   // deep generic inference that causes exponential type expansion with TanStack Start.
@@ -311,6 +419,35 @@ export function LapTable({
         ),
         meta: { align: 'right' },
       },
+      // Custom columns injected here
+      ...sortedCustomCols.map(
+        ({ def }): ColumnDef<LapHandle> => ({
+          id: `custom_${def._id}`,
+          header: def.name,
+          cell: (info) => {
+            const lap = info.row.original
+            if (def.type === 'manual') {
+              const val = valueLookup.get(def._id)?.get(lap.id)
+              return (
+                <InlineNumberInput
+                  value={val}
+                  onCommit={(v) => customColumns?.onSetValue(def._id, lap.id, v)}
+                  onClear={() => customColumns?.onClearValue(def._id, lap.id)}
+                />
+              )
+            }
+            // Computed
+            if (!def.formula) return <span className="text-muted-foreground">-</span>
+            const result = evaluateFormula(
+              def.formula,
+              lap.stats,
+              getManualValuesForLap(valueLookup, lap.id),
+            )
+            return <span className="tabular-nums">{formatComputedValue(result)}</span>
+          },
+          meta: { align: 'right' },
+        }),
+      ),
       {
         id: 'actions',
         header: '',
@@ -382,6 +519,9 @@ export function LapTable({
       cancelEditing,
       moveLap,
       onMerge,
+      sortedCustomCols,
+      valueLookup,
+      customColumns,
     ],
   )
 
@@ -570,6 +710,27 @@ export function LapTable({
                     break
                   case 'actions':
                     content = ''
+                    break
+                  default:
+                    // Custom columns: show sum for manual, empty for computed
+                    if (col.id.startsWith('custom_')) {
+                      const colId = col.id.replace('custom_', '')
+                      const lapMap = valueLookup.get(colId)
+                      if (lapMap) {
+                        let sum = 0
+                        let hasAny = false
+                        for (const lap of laps) {
+                          const v = lapMap.get(lap.id)
+                          if (v != null) {
+                            sum += v
+                            hasAny = true
+                          }
+                        }
+                        content = hasAny ? formatComputedValue(sum) : ''
+                      } else {
+                        content = ''
+                      }
+                    }
                     break
                 }
 

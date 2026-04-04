@@ -49,7 +49,7 @@ function ActivityPage() {
     )
   }
 
-  return <ActivityEditor activity={activity} />
+  return <ActivityEditor key={activity._id} activity={activity} />
 }
 
 function ActivityEditor({ activity }: { activity: Doc<'activities'> }) {

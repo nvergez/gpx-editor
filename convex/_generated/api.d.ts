@@ -10,6 +10,7 @@
 
 import type * as activities from "../activities.js";
 import type * as auth from "../auth.js";
+import type * as columns from "../columns.js";
 import type * as http from "../http.js";
 import type * as strava from "../strava.js";
 
@@ -22,6 +23,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   activities: typeof activities;
   auth: typeof auth;
+  columns: typeof columns;
   http: typeof http;
   strava: typeof strava;
 }>;

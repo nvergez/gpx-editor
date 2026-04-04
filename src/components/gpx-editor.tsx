@@ -1,5 +1,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 import type { ActivityDocument } from '~/utils/dom-model'
 import type { LapHandle } from '~/utils/dom-model'
@@ -23,7 +25,10 @@ import {
   exportOriginal,
   getTrackPointsFromElement,
 } from '~/utils/dom-operations'
+import { exportLapsCsv } from '~/utils/csv-export'
 import { LapTable } from './lap-table'
+import type { CustomColumnConfig } from './lap-table'
+import { CustomizeColumnsDialog } from './customize-columns-dialog'
 import { ActivityMap } from './activity-map'
 import { ElevationChart } from './elevation-chart'
 import { LapPaceChart } from './lap-pace-chart'
@@ -49,6 +54,7 @@ import {
   Info,
   X,
   FileDown,
+  FileSpreadsheet,
   Undo2,
   Redo2,
   Pencil,
@@ -60,6 +66,7 @@ import {
   Heart,
   Gauge,
   Sparkles,
+  Settings2,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { StravaLogo } from '~/utils/strava'
@@ -317,6 +324,37 @@ export function GpxEditor({
   const setChatOpen = useChatStore((s) => s.setOpen)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Custom columns
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [builtinVisibility, setBuiltinVisibility] = useState<Record<string, boolean>>({})
+  const allDefinitionsRaw = useQuery(api.columns.listDefinitions)
+  const activityColumnsRaw = useQuery(api.columns.listActivityColumns, { activityId })
+  const columnValuesRaw = useQuery(api.columns.listValues, { activityId })
+  const allDefinitions = useMemo(() => allDefinitionsRaw ?? [], [allDefinitionsRaw])
+  const activityColumns = useMemo(() => activityColumnsRaw ?? [], [activityColumnsRaw])
+  const columnValues = useMemo(() => columnValuesRaw ?? [], [columnValuesRaw])
+  const setColumnValue = useMutation(api.columns.setValue)
+  const clearColumnValue = useMutation(api.columns.clearValue)
+
+  const customColumnConfig = useMemo((): CustomColumnConfig | undefined => {
+    if (activityColumns.length === 0 && allDefinitions.length === 0) return undefined
+    return {
+      definitions: allDefinitions,
+      activityColumns,
+      values: columnValues,
+      onSetValue: (columnId, lapId, value) => {
+        setColumnValue({ activityId, columnId, lapId, value })
+      },
+      onClearValue: (columnId, lapId) => {
+        clearColumnValue({ activityId, columnId, lapId })
+      },
+    }
+  }, [allDefinitions, activityColumns, columnValues, activityId, setColumnValue, clearColumnValue])
+
+  const handleBuiltinVisibilityChange = useCallback((key: string, visible: boolean) => {
+    setBuiltinVisibility((prev) => ({ ...prev, [key]: visible }))
+  }, [])
+
   const laps = useMemo(() => {
     if (!actDoc) return []
     void revision
@@ -385,9 +423,14 @@ export function GpxEditor({
       splitLap(actDoc, lapId, pointIndices)
       bumpRevision()
       const parts = pointIndices.length + 1
-      toast.success(`Lap split into ${parts} part${parts !== 1 ? 's' : ''}`)
+      toast.success(`Lap split into ${parts} part${parts !== 1 ? 's' : ''}`, {
+        description:
+          activityColumns.length > 0
+            ? 'Custom column values for the split lap have been cleared.'
+            : undefined,
+      })
     },
-    [actDoc, bumpRevision],
+    [actDoc, bumpRevision, activityColumns.length],
   )
 
   const handleMergeLaps = useCallback(
@@ -396,9 +439,14 @@ export function GpxEditor({
       undoManagerRef.current.snapshot(actDoc)
       mergeLaps(actDoc, lapIds[0], lapIds[1])
       bumpRevision()
-      toast.success('Laps merged')
+      toast.success('Laps merged', {
+        description:
+          activityColumns.length > 0
+            ? 'Custom column values for the merged lap have been cleared.'
+            : undefined,
+      })
     },
-    [actDoc, bumpRevision],
+    [actDoc, bumpRevision, activityColumns.length],
   )
 
   const handleRenameLap = useCallback(
@@ -433,6 +481,24 @@ export function GpxEditor({
     },
     [actDoc, bumpRevision],
   )
+
+  const handleExportCsv = useCallback(() => {
+    if (!actDoc) return
+    const csv = exportLapsCsv({
+      laps,
+      builtinVisibility,
+      customColumns: customColumnConfig
+        ? {
+            definitions: customColumnConfig.definitions,
+            activityColumns: customColumnConfig.activityColumns,
+            values: customColumnConfig.values,
+          }
+        : undefined,
+    })
+    const baseName = sanitizeFilename(actDoc.name)
+    downloadFile(csv, `${baseName}_laps.csv`, 'text/csv')
+    toast.success('Laps exported as CSV')
+  }, [actDoc, laps, builtinVisibility, customColumnConfig])
 
   const handleExportOriginal = useCallback(() => {
     if (!actDoc) return
@@ -636,6 +702,21 @@ export function GpxEditor({
 
         <LapPaceChart laps={laps} hoveredLapId={hoveredLapId} onHoverLap={setHoveredLapId} />
 
+        {/* Lap table toolbar */}
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-medium text-muted-foreground">Laps</h3>
+          <div className="flex gap-1.5">
+            <Button variant="outline" size="sm" onClick={() => setCustomizeOpen(true)}>
+              <Settings2 className="size-3.5" />
+              <span className="hidden sm:inline">Customize columns</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportCsv}>
+              <FileSpreadsheet className="size-3.5" />
+              <span className="hidden sm:inline">Export CSV</span>
+            </Button>
+          </div>
+        </div>
+
         <LapTable
           laps={laps}
           sourceFormat={actDoc.sourceFormat}
@@ -646,6 +727,18 @@ export function GpxEditor({
           onReorder={handleReorderLaps}
           hoveredLapId={hoveredLapId}
           onHoverLap={setHoveredLapId}
+          customColumns={customColumnConfig}
+          builtinVisibilityOverride={builtinVisibility}
+        />
+
+        <CustomizeColumnsDialog
+          open={customizeOpen}
+          onOpenChange={setCustomizeOpen}
+          activityId={activityId}
+          allDefinitions={allDefinitions}
+          activityColumns={activityColumns}
+          builtinVisibility={builtinVisibility}
+          onBuiltinVisibilityChange={handleBuiltinVisibilityChange}
         />
 
         <AlertDialog

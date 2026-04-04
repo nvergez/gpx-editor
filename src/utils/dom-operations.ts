@@ -4,11 +4,33 @@ import { computeStats, parseGpxPoints, parseOptionalFloat, parseTcxTrackpoints }
 
 // --- Parsing ---
 
-let lapIdCounter = 0
+/**
+ * Generate a deterministic lap ID from element content so the same XML
+ * always produces the same IDs across page loads. This is critical for
+ * column values stored in Convex which are keyed by lapId.
+ */
+function deterministicLapId(el: Element, format: 'gpx' | 'tcx', index: number): string {
+  // TCX: use StartTime attribute (always present on <Lap>)
+  if (format === 'tcx') {
+    const startTime = el.getAttribute('StartTime')
+    if (startTime) return `lap-tcx-${startTime}`
+  }
 
-function nextLapId(): string {
-  lapIdCounter++
-  return `lap-${lapIdCounter}-${Date.now()}`
+  // GPX: use first trackpoint's lat/lon/time
+  const firstPt = el.getElementsByTagName(format === 'gpx' ? 'trkpt' : 'Trackpoint')[0]
+  if (firstPt) {
+    const lat = firstPt.getAttribute('lat') ?? ''
+    const lon = firstPt.getAttribute('lon') ?? ''
+    const time =
+      firstPt.getElementsByTagName('time')[0]?.textContent ??
+      firstPt.getElementsByTagName('Time')[0]?.textContent ??
+      ''
+    const fingerprint = `${lat},${lon},${time}`
+    if (fingerprint !== ',,') return `lap-${format}-${index}-${fingerprint}`
+  }
+
+  // Fallback: index only (stable as long as lap order doesn't change)
+  return `lap-${format}-idx-${index}`
 }
 
 export function parseToDocument(xml: string): ActivityDocument {
@@ -25,10 +47,17 @@ export function parseToDocument(xml: string): ActivityDocument {
 
   const actDoc: ActivityDocument = { doc, sourceFormat, name, lapNames: new Map() }
 
-  // Assign IDs and default names to laps
   const laps = getLapElements(actDoc)
+  const usedIds = new Set<string>()
   laps.forEach((el, i) => {
-    const id = nextLapId()
+    let id = deterministicLapId(el, sourceFormat, i)
+    // Ensure uniqueness in case two laps fingerprint identically
+    if (usedIds.has(id)) {
+      let suffix = 2
+      while (usedIds.has(`${id}-${suffix}`)) suffix++
+      id = `${id}-${suffix}`
+    }
+    usedIds.add(id)
     el.setAttribute('data-lap-id', id)
     if (sourceFormat === 'tcx') {
       actDoc.lapNames.set(id, `Lap ${i + 1}`)
@@ -377,8 +406,16 @@ function splitGpxLap(
     renameLap(actDoc, lapId, `${origName} (1)`)
   }
 
-  // Assign ID and insert after original
-  const newId = nextLapId()
+  // Assign a deterministic ID so column values survive page reloads
+  const existingIds = new Set(
+    getLapElements(actDoc).map((e) => e.getAttribute('data-lap-id') ?? ''),
+  )
+  let newId = deterministicLapId(newTrk, 'gpx', -1)
+  if (existingIds.has(newId)) {
+    let suffix = 2
+    while (existingIds.has(`${newId}-${suffix}`)) suffix++
+    newId = `${newId}-${suffix}`
+  }
   newTrk.setAttribute('data-lap-id', newId)
   el.parentNode!.insertBefore(newTrk, el.nextSibling)
 }
@@ -426,7 +463,15 @@ function splitTcxLap(
   if (splitOrdinal === 0) {
     actDoc.lapNames.set(lapId, `${origName} (1)`)
   }
-  const newId = nextLapId()
+  const existingIds = new Set(
+    getLapElements(actDoc).map((e) => e.getAttribute('data-lap-id') ?? ''),
+  )
+  let newId = deterministicLapId(newLap, 'tcx', -1)
+  if (existingIds.has(newId)) {
+    let suffix = 2
+    while (existingIds.has(`${newId}-${suffix}`)) suffix++
+    newId = `${newId}-${suffix}`
+  }
   newLap.setAttribute('data-lap-id', newId)
   actDoc.lapNames.set(newId, `${origName} (${splitOrdinal + 2})`)
 
