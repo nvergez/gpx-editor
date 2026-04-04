@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import type { MouseHandlerDataParam } from 'recharts'
 import type { LapHandle } from '~/utils/dom-model'
 import { formatPace, formatDistance, formatDuration } from '~/utils/gpx-parser'
+import * as m from '~/paraglide/messages.js'
 
 interface LapPaceChartProps {
   laps: LapHandle[]
@@ -45,23 +46,26 @@ function CustomTooltip({
           <span className="text-foreground tabular-nums">
             {formatPace(data.distance, data.duration)}
           </span>{' '}
-          pace
+          {m.chart_pace()}
         </p>
         <p>
           <span className="text-foreground tabular-nums">{formatDistance(data.distance)}</span>{' '}
-          distance
+          {m.chart_distance()}
         </p>
         <p>
-          <span className="text-foreground tabular-nums">{formatDuration(data.duration)}</span> time
+          <span className="text-foreground tabular-nums">{formatDuration(data.duration)}</span>{' '}
+          {m.chart_time()}
         </p>
         {data.avgHr != null && (
           <p>
-            <span className="text-foreground tabular-nums">{Math.round(data.avgHr)}</span> bpm
+            <span className="text-foreground tabular-nums">{Math.round(data.avgHr)}</span>{' '}
+            {m.chart_bpm()}
           </p>
         )}
         {data.elevationGain != null && (
           <p>
-            <span className="text-foreground tabular-nums">{data.elevationGain}</span>m elev+
+            <span className="text-foreground tabular-nums">{data.elevationGain}</span>
+            {m.chart_elev_gain()}
           </p>
         )}
       </div>
@@ -133,7 +137,7 @@ export function LapPaceChart({ laps, hoveredLapId, onHoverLap }: LapPaceChartPro
   return (
     <div className="rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4">
       <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-        Pace per Lap
+        {m.chart_pace_per_lap()}
       </p>
       <div className="-mx-3 sm:-mx-4 overflow-x-auto px-3 sm:px-4">
         <div style={{ minWidth: chartMinWidth }}>

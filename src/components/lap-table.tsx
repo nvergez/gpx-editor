@@ -47,6 +47,7 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react'
+import * as m from '~/paraglide/messages.js'
 
 export interface CustomColumnConfig {
   definitions: ColumnDefinition[]
@@ -150,7 +151,7 @@ function InlineNumberInput({
     <button
       onClick={startEdit}
       className="tabular-nums text-sm min-w-[3rem] text-right block w-full hover:bg-muted/50 rounded px-1 py-0.5 transition-colors"
-      title="Click to edit"
+      title={m.table_click_to_edit()}
     >
       {value != null ? value : <span className="text-muted-foreground/40">—</span>}
     </button>
@@ -243,7 +244,7 @@ export function LapTable({
       },
       {
         accessorKey: 'name',
-        header: ({ column }) => <SortableHeader label="Name" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.table_name()} column={column} />,
         cell: (info) => {
           const lap = info.row.original
           if (editingLapId === lap.id) {
@@ -268,7 +269,7 @@ export function LapTable({
       {
         id: 'distance',
         accessorFn: (row: LapHandle): number => row.stats.distance,
-        header: ({ column }) => <SortableHeader label="Distance" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_distance()} column={column} />,
         cell: (info) => (
           <span className="tabular-nums">{formatDistance(info.getValue<number>())}</span>
         ),
@@ -277,7 +278,7 @@ export function LapTable({
       {
         id: 'duration',
         accessorFn: (row: LapHandle): number => row.stats.duration,
-        header: ({ column }) => <SortableHeader label="Duration" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_duration()} column={column} />,
         cell: (info) => (
           <span className="tabular-nums">{formatDuration(info.getValue<number>())}</span>
         ),
@@ -289,7 +290,7 @@ export function LapTable({
           row.stats.duration > 0 && row.stats.distance > 0
             ? row.stats.duration / (row.stats.distance / 1000)
             : Infinity,
-        header: ({ column }) => <SortableHeader label="Pace" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_pace()} column={column} />,
         cell: (info) => {
           const lap = info.row.original
           return (
@@ -303,7 +304,7 @@ export function LapTable({
       {
         id: 'avgHr',
         accessorFn: (row: LapHandle): number | undefined => row.stats.avgHr,
-        header: ({ column }) => <SortableHeader label="Avg HR" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_avg_hr()} column={column} />,
         cell: (info) => {
           const v = info.getValue<number | undefined>()
           return <span className="tabular-nums">{v != null ? `${Math.round(v)}` : '-'}</span>
@@ -313,7 +314,7 @@ export function LapTable({
       {
         id: 'maxHr',
         accessorFn: (row: LapHandle): number | undefined => row.stats.maxHr,
-        header: ({ column }) => <SortableHeader label="Max HR" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_max_hr()} column={column} />,
         cell: (info) => {
           const v = info.getValue<number | undefined>()
           return <span className="tabular-nums">{v != null ? `${v}` : '-'}</span>
@@ -323,7 +324,7 @@ export function LapTable({
       {
         id: 'avgCadence',
         accessorFn: (row: LapHandle): number | undefined => row.stats.avgCadence,
-        header: ({ column }) => <SortableHeader label="Cadence" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_cadence()} column={column} />,
         cell: (info) => {
           const v = info.getValue<number | undefined>()
           return <span className="tabular-nums">{v != null ? `${v}` : '-'}</span>
@@ -333,7 +334,7 @@ export function LapTable({
       {
         id: 'avgPower',
         accessorFn: (row: LapHandle): number | undefined => row.stats.avgPower,
-        header: ({ column }) => <SortableHeader label="Power" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_power()} column={column} />,
         cell: (info) => {
           const v = info.getValue<number | undefined>()
           return <span className="tabular-nums">{v != null ? `${v}W` : '-'}</span>
@@ -343,7 +344,7 @@ export function LapTable({
       {
         id: 'maxSpeed',
         accessorFn: (row: LapHandle): number | undefined => row.stats.maxSpeed,
-        header: ({ column }) => <SortableHeader label="Max Spd" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_max_spd()} column={column} />,
         cell: (info) => {
           const v = info.getValue<number | undefined>()
           return <span className="tabular-nums">{v != null ? formatSpeed(v) : '-'}</span>
@@ -353,7 +354,7 @@ export function LapTable({
       {
         id: 'calories',
         accessorFn: (row: LapHandle): number | undefined => row.stats.calories,
-        header: ({ column }) => <SortableHeader label="Cal" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_cal()} column={column} />,
         cell: (info) => {
           const v = info.getValue<number | undefined>()
           return <span className="tabular-nums">{v != null ? `${v}` : '-'}</span>
@@ -363,7 +364,7 @@ export function LapTable({
       {
         id: 'elevationGain',
         accessorFn: (row: LapHandle): number | undefined => row.stats.elevationGain,
-        header: ({ column }) => <SortableHeader label="Elev +" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_elev_gain()} column={column} />,
         cell: (info) => {
           const v = info.getValue<number | undefined>()
           return <span className="tabular-nums">{v != null ? `${v}m` : '-'}</span>
@@ -373,7 +374,7 @@ export function LapTable({
       {
         id: 'elevationLoss',
         accessorFn: (row: LapHandle): number | undefined => row.stats.elevationLoss,
-        header: ({ column }) => <SortableHeader label="Elev -" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_elev_loss()} column={column} />,
         cell: (info) => {
           const v = info.getValue<number | undefined>()
           return <span className="tabular-nums">{v != null ? `${v}m` : '-'}</span>
@@ -382,7 +383,7 @@ export function LapTable({
       },
       {
         accessorKey: 'pointCount',
-        header: ({ column }) => <SortableHeader label="Pts" column={column} />,
+        header: ({ column }) => <SortableHeader label={m.stat_pts()} column={column} />,
         cell: (info) => (
           <span className="tabular-nums text-muted-foreground">{info.getValue<number>()}</span>
         ),
@@ -432,17 +433,17 @@ export function LapTable({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => startEditing(lap)}>
                   <Pencil className="size-3.5" />
-                  Rename
+                  {m.table_rename()}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setSplitLap(lap)} disabled={lap.pointCount < 3}>
                   <Scissors className="size-3.5" />
-                  Split
+                  {m.table_split()}
                 </DropdownMenuItem>
                 {!isLast && (
                   <DropdownMenuItem onClick={() => onMerge([lap.id, laps[index + 1].id])}>
                     <Merge className="size-3.5" />
-                    Merge with next
+                    {m.table_merge_next()}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -611,7 +612,7 @@ export function LapTable({
                     content = ''
                     break
                   case 'name':
-                    content = `${laps.length} laps`
+                    content = m.table_laps_count({ count: String(laps.length) })
                     break
                   case 'distance':
                     content = formatDistance(totals.totalDistance)

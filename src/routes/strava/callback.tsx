@@ -4,6 +4,7 @@ import { api } from '../../../convex/_generated/api'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Activity, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { validateStravaState, clearStravaState } from '~/utils/strava'
+import * as m from '~/paraglide/messages.js'
 
 export const Route = createFileRoute('/strava/callback')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -29,14 +30,14 @@ function StravaCallback() {
     }
 
     if (!code) {
-      return { status: 'error' as const, msg: 'No authorization code received' }
+      return { status: 'error' as const, msg: m.strava_no_code() }
     }
 
     if (didExchange.current) return null
     didExchange.current = true
 
     if (!validateStravaState(state)) {
-      return { status: 'error' as const, msg: 'Invalid OAuth state — please try connecting again' }
+      return { status: 'error' as const, msg: m.strava_invalid_state() }
     }
 
     clearStravaState()
@@ -46,7 +47,7 @@ function StravaCallback() {
     } catch (err: unknown) {
       return {
         status: 'error' as const,
-        msg: err instanceof Error ? err.message : 'Token exchange failed',
+        msg: err instanceof Error ? err.message : m.strava_token_failed(),
       }
     }
   }, [code, searchError, state, exchangeToken])
@@ -75,14 +76,14 @@ function StravaCallback() {
       {status === 'loading' && (
         <>
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Connecting to Strava...</p>
+          <p className="text-sm text-muted-foreground">{m.strava_connecting()}</p>
         </>
       )}
 
       {status === 'success' && (
         <>
           <CheckCircle2 className="size-6 text-green-500" />
-          <p className="text-sm text-muted-foreground">Strava connected! Redirecting...</p>
+          <p className="text-sm text-muted-foreground">{m.strava_connected_redirect()}</p>
         </>
       )}
 
@@ -90,14 +91,14 @@ function StravaCallback() {
         <>
           <XCircle className="size-6 text-destructive" />
           <div className="text-center">
-            <p className="text-sm font-medium text-foreground">Connection failed</p>
+            <p className="text-sm font-medium text-foreground">{m.strava_connection_failed()}</p>
             <p className="mt-1 text-xs text-muted-foreground">{errorMsg}</p>
           </div>
           <button
             onClick={() => navigate({ to: '/' })}
             className="text-sm text-primary underline underline-offset-2"
           >
-            Go back
+            {m.common_go_back()}
           </button>
         </>
       )}

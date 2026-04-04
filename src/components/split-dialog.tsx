@@ -14,6 +14,7 @@ import { Button } from '~/components/ui/button'
 import { Label } from '~/components/ui/label'
 import { Input } from '~/components/ui/input'
 import { Scissors } from 'lucide-react'
+import * as m from '~/paraglide/messages.js'
 
 type SplitMode = 'manual' | 'equal'
 
@@ -117,9 +118,12 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Split "{lap.name}"</DialogTitle>
+          <DialogTitle>{m.split_title({ name: lap.name })}</DialogTitle>
           <DialogDescription>
-            {points.length} points, {formatDistance(lap.stats.distance)}.
+            {m.split_description({
+              points: String(points.length),
+              distance: formatDistance(lap.stats.distance),
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -133,7 +137,7 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
             }`}
             onClick={() => setMode('equal')}
           >
-            Equal split
+            {m.split_equal()}
           </button>
           <button
             className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -143,7 +147,7 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
             }`}
             onClick={() => setMode('manual')}
           >
-            Manual
+            {m.split_manual()}
           </button>
         </div>
 
@@ -154,7 +158,7 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
                 htmlFor="split-point"
                 className="text-xs uppercase tracking-wider text-muted-foreground"
               >
-                Split at point
+                {m.split_at_point()}
               </Label>
               <div className="flex items-center gap-3">
                 <Input
@@ -177,7 +181,7 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
                 htmlFor="num-parts"
                 className="text-xs uppercase tracking-wider text-muted-foreground"
               >
-                Number of equal laps
+                {m.split_num_equal()}
               </Label>
               <div className="flex items-center gap-3">
                 <Input
@@ -195,8 +199,10 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
               </div>
               {equalSplitIndices.length < numParts - 1 && (
                 <p className="text-xs text-muted-foreground">
-                  Not enough trackpoints for {numParts} distinct segments — reduced to{' '}
-                  {equalSplitIndices.length + 1}.
+                  {m.split_not_enough({
+                    count: String(numParts),
+                    reduced: String(equalSplitIndices.length + 1),
+                  })}
                 </p>
               )}
             </div>
@@ -232,10 +238,12 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
                 className="p-2.5 rounded-lg bg-muted/60 border border-border/40 space-y-0.5"
               >
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Part {i + 1}
+                  {m.split_part({ index: String(i + 1) })}
                 </p>
                 <p className="font-medium tabular-nums text-sm">{formatDistance(seg.distance)}</p>
-                <p className="text-xs text-muted-foreground tabular-nums">{seg.pointCount} pts</p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {m.split_pts({ count: String(seg.pointCount) })}
+                </p>
               </div>
             ))}
           </div>
@@ -243,11 +251,11 @@ export function SplitDialog({ lap, sourceFormat, onSplit, onClose }: SplitDialog
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {m.common_cancel()}
           </Button>
           <Button onClick={() => onSplit(activeIndices)} disabled={!canSplit}>
             <Scissors className="size-3.5" />
-            Split into {segments.length}
+            {m.split_into({ count: String(segments.length) })}
           </Button>
         </DialogFooter>
       </DialogContent>

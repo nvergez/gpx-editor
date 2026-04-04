@@ -5,6 +5,7 @@ import { routeTree } from './routeTree.gen'
 import { DefaultCatchBoundary } from './components/default-catch-boundary'
 import { NotFound } from './components/not-found'
 import { getClientConvexUrl } from './lib/convex-env'
+import { deLocalizeUrl, localizeUrl } from './paraglide/runtime.js'
 
 export function getRouter() {
   const convexQueryClient = new ConvexQueryClient(getClientConvexUrl(), {
@@ -30,6 +31,10 @@ export function getRouter() {
     defaultErrorComponent: DefaultCatchBoundary,
     defaultNotFoundComponent: () => <NotFound />,
     scrollRestoration: true,
+    rewrite: {
+      input: ({ url }) => deLocalizeUrl(url),
+      output: ({ url }) => localizeUrl(url),
+    },
   })
 
   return router

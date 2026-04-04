@@ -54,6 +54,8 @@ import {
 } from '~/components/ui/command'
 import { SettingsDialog } from '~/components/settings-dialog'
 import { authClient } from '~/lib/auth-client'
+import * as m from '~/paraglide/messages.js'
+import { getLocale } from '~/paraglide/runtime.js'
 
 export function ActivitySidebar() {
   const navigate = useNavigate()
@@ -110,7 +112,7 @@ export function ActivitySidebar() {
       removeActivity(
         { activityId },
         {
-          onSuccess: () => toast.success('Activity deleted'),
+          onSuccess: () => toast.success(m.sidebar_activity_deleted()),
           onError: (err) => toast.error(err.message),
         },
       )
@@ -172,7 +174,7 @@ export function ActivitySidebar() {
               className="mt-2 flex w-full items-center gap-2 rounded-md border border-sidebar-border px-3 py-1.5 text-sm text-sidebar-foreground/50 transition-colors hover:border-sidebar-ring/30 hover:text-sidebar-foreground"
             >
               <Search className="size-3.5" />
-              <span className="flex-1 text-left">Search…</span>
+              <span className="flex-1 text-left">{m.sidebar_search()}</span>
               <kbd className="pointer-events-none hidden h-5 items-center gap-0.5 rounded border border-sidebar-border bg-sidebar-accent px-1.5 font-mono text-[10px] font-medium sm:inline-flex">
                 <span className="text-xs">⌘</span>K
               </kbd>
@@ -188,7 +190,7 @@ export function ActivitySidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton isActive={isOnHome} render={<Link to="/" />}>
                     <Plus className="size-4" />
-                    <span>Import activity</span>
+                    <span>{m.sidebar_import_activity()}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -200,7 +202,8 @@ export function ActivitySidebar() {
           {/* Activity list */}
           <SidebarGroup className="flex-1">
             <SidebarGroupLabel>
-              Activities{activities && activities.length > 0 ? ` (${activities.length})` : ''}
+              {m.sidebar_activities()}
+              {activities && activities.length > 0 ? ` (${activities.length})` : ''}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -268,7 +271,7 @@ export function ActivitySidebar() {
                             }}
                           >
                             <Pencil className="size-3.5" />
-                            Rename
+                            {m.common_rename()}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={(e) => {
@@ -279,7 +282,7 @@ export function ActivitySidebar() {
                             className="text-destructive"
                           >
                             <Trash2 className="size-3.5" />
-                            Delete
+                            {m.common_delete()}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -289,7 +292,7 @@ export function ActivitySidebar() {
 
                 {activities?.length === 0 && (
                   <p className="px-2 py-8 text-center text-sm text-sidebar-foreground/30">
-                    No activities yet
+                    {m.sidebar_no_activities()}
                   </p>
                 )}
               </SidebarMenu>
@@ -307,22 +310,22 @@ export function ActivitySidebar() {
         <CommandDialog
           open={searchOpen}
           onOpenChange={setSearchOpen}
-          title="Search activities"
-          description="Search your activities by name"
+          title={m.sidebar_search_title()}
+          description={m.sidebar_search_desc()}
         >
           <Command>
-            <CommandInput placeholder="Search activities…" />
+            <CommandInput placeholder={m.sidebar_search_placeholder()} />
             <CommandList>
-              <CommandEmpty>No activities found.</CommandEmpty>
+              <CommandEmpty>{m.sidebar_no_results()}</CommandEmpty>
               {isOnActivityPage && (
-                <CommandGroup heading="Actions">
+                <CommandGroup heading={m.sidebar_actions()}>
                   <CommandItem onSelect={handleToggleChat} className="gap-3">
                     <Sparkles className="size-4 text-primary" />
-                    <span className="text-sm">Toggle AI Chat</span>
+                    <span className="text-sm">{m.sidebar_toggle_ai()}</span>
                   </CommandItem>
                 </CommandGroup>
               )}
-              <CommandGroup heading="Activities">
+              <CommandGroup heading={m.sidebar_activities()}>
                 {activities.map((activity) => (
                   <CommandItem
                     key={activity._id}
@@ -380,10 +383,10 @@ function SidebarUserFooter() {
   const handleSignOut = async () => {
     const result = await authClient.signOut()
     if (result.error) {
-      toast.error(result.error.message ?? 'Unable to sign out')
+      toast.error(result.error.message ?? m.sidebar_sign_out_error())
       return
     }
-    window.location.href = '/'
+    window.location.href = '/' + getLocale() + '/'
   }
 
   return (
@@ -403,7 +406,7 @@ function SidebarUserFooter() {
                 {initials}
               </div>
               <div className="flex-1 min-w-0 leading-tight">
-                <p className="truncate text-sm font-medium">{name || 'User'}</p>
+                <p className="truncate text-sm font-medium">{name || m.sidebar_user_fallback()}</p>
                 <p className="truncate text-[11px] text-sidebar-foreground/50">{email}</p>
               </div>
               <ChevronsUpDown className="ml-auto size-4 text-sidebar-foreground/30" />
@@ -419,19 +422,21 @@ function SidebarUserFooter() {
                   {initials}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{name || 'User'}</p>
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {name || m.sidebar_user_fallback()}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">{email}</p>
                 </div>
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                 <Settings className="size-3.5" />
-                Settings
+                {m.sidebar_settings()}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="size-3.5" />
-                Sign out
+                {m.sidebar_sign_out()}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

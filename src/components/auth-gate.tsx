@@ -7,6 +7,7 @@ import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { authClient } from '~/lib/auth-client'
 import { cn } from '~/lib/utils'
+import * as m from '~/paraglide/messages.js'
 
 type AuthMode = 'sign-in' | 'sign-up'
 
@@ -19,7 +20,7 @@ function LoadingScreen() {
         </div>
         <div className="absolute inset-0 animate-ping rounded-2xl bg-primary/5" />
       </div>
-      <p className="animate-pulse text-sm text-muted-foreground">Loading session…</p>
+      <p className="animate-pulse text-sm text-muted-foreground">{m.auth_loading_session()}</p>
     </div>
   )
 }
@@ -39,20 +40,20 @@ function AuthForm() {
       if (mode === 'sign-in') {
         const result = await authClient.signIn.email({ email, password })
         if (result.error) {
-          toast.error(result.error.message ?? 'Unable to sign in')
+          toast.error(result.error.message ?? m.auth_unable_sign_in())
           return
         }
-        toast.success('Welcome back')
+        toast.success(m.auth_welcome_back())
         setPassword('')
         return
       }
 
       const result = await authClient.signUp.email({ name, email, password })
       if (result.error) {
-        toast.error(result.error.message ?? 'Unable to create account')
+        toast.error(result.error.message ?? m.auth_unable_create())
         return
       }
-      toast.success('Account created')
+      toast.success(m.auth_account_created())
       setPassword('')
     } finally {
       setIsSubmitting(false)
@@ -68,10 +69,10 @@ function AuthForm() {
             <Activity className="size-8 text-primary" strokeWidth={1.8} />
           </div>
           <h2 className="font-serif text-2xl tracking-tight text-foreground">
-            {mode === 'sign-in' ? 'Welcome back' : 'Create account'}
+            {mode === 'sign-in' ? m.auth_welcome_back() : m.auth_create_account()}
           </h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            {mode === 'sign-in' ? 'Sign in to your Lapcraft account' : 'Get started with Lapcraft'}
+            {mode === 'sign-in' ? m.auth_sign_in_desc() : m.auth_sign_up_desc()}
           </p>
         </div>
 
@@ -93,7 +94,7 @@ function AuthForm() {
                 : 'text-muted-foreground hover:text-foreground/70',
             )}
           >
-            Sign in
+            {m.auth_sign_in()}
           </button>
           <button
             type="button"
@@ -105,7 +106,7 @@ function AuthForm() {
                 : 'text-muted-foreground hover:text-foreground/70',
             )}
           >
-            Sign up
+            {m.auth_sign_up()}
           </button>
         </div>
 
@@ -123,12 +124,12 @@ function AuthForm() {
                   htmlFor="auth-name"
                   className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
                 >
-                  Name
+                  {m.common_name()}
                 </Label>
                 <Input
                   id="auth-name"
                   autoComplete="name"
-                  placeholder="Your name"
+                  placeholder={m.auth_name_placeholder()}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   required={mode === 'sign-up'}
@@ -143,13 +144,13 @@ function AuthForm() {
               htmlFor="auth-email"
               className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
             >
-              Email
+              {m.auth_email()}
             </Label>
             <Input
               id="auth-email"
               autoComplete="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder={m.auth_email_placeholder()}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
@@ -162,7 +163,7 @@ function AuthForm() {
               htmlFor="auth-password"
               className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
             >
-              Password
+              {m.auth_password()}
             </Label>
             <Input
               id="auth-password"
@@ -199,25 +200,25 @@ function AuthForm() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                   />
                 </svg>
-                {mode === 'sign-in' ? 'Signing in…' : 'Creating account…'}
+                {mode === 'sign-in' ? m.auth_signing_in() : m.auth_creating_account()}
               </span>
             ) : mode === 'sign-in' ? (
-              'Sign in'
+              m.auth_sign_in()
             ) : (
-              'Create account'
+              m.auth_create_account()
             )}
           </Button>
         </form>
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-muted-foreground/60">
-          {mode === 'sign-in' ? "Don't have an account? " : 'Already have an account? '}
+          {mode === 'sign-in' ? m.auth_no_account() : m.auth_have_account()}
           <button
             type="button"
             onClick={() => setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')}
             className="text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
           >
-            {mode === 'sign-in' ? 'Sign up' : 'Sign in'}
+            {mode === 'sign-in' ? m.auth_sign_up() : m.auth_sign_in()}
           </button>
         </p>
       </div>

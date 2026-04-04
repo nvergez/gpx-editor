@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import type { ActivityDocument, LapHandle } from '~/utils/dom-model'
 import { formatDistance, formatDuration, formatPace, formatSpeed } from '~/utils/gpx-parser'
+import * as m from '~/paraglide/messages.js'
 
 interface MutationCallbacks {
   onRenameActivity: (name: string) => void
@@ -68,11 +69,11 @@ interface ToolMeta {
 }
 
 const TOOL_META: Record<string, ToolMeta> = {
-  renameActivity: { label: 'Rename activity', icon: Pencil, requiresApproval: true },
-  renameLap: { label: 'Rename lap', icon: Pencil, requiresApproval: true },
-  splitLap: { label: 'Split lap', icon: Scissors, requiresApproval: true },
-  mergeLaps: { label: 'Merge laps', icon: Merge, requiresApproval: true },
-  getLapDetails: { label: 'Reading lap details', icon: MapPin, requiresApproval: false },
+  renameActivity: { label: m.chat_tool_rename_activity(), icon: Pencil, requiresApproval: true },
+  renameLap: { label: m.chat_tool_rename_lap(), icon: Pencil, requiresApproval: true },
+  splitLap: { label: m.chat_tool_split_lap(), icon: Scissors, requiresApproval: true },
+  mergeLaps: { label: m.chat_tool_merge_laps(), icon: Merge, requiresApproval: true },
+  getLapDetails: { label: m.chat_tool_get_details(), icon: MapPin, requiresApproval: false },
 }
 
 /** Build a short human-readable description of what a tool call will do */
@@ -81,19 +82,19 @@ function describeToolCall(name: string, args: Record<string, unknown>, laps: Lap
 
   switch (name) {
     case 'renameActivity':
-      return `Rename activity to "${args.name}"`
+      return m.chat_desc_rename_activity({ name: args.name as string })
     case 'renameLap': {
       const lap = findLap(args.lapId as string)
-      return `Rename "${lap?.name ?? 'lap'}" → "${args.name}"`
+      return m.chat_desc_rename_lap({ oldName: lap?.name ?? 'lap', newName: args.name as string })
     }
     case 'splitLap': {
       const lap = findLap(args.lapId as string)
-      return `Split "${lap?.name ?? 'lap'}" into ${args.parts} parts`
+      return m.chat_desc_split_lap({ name: lap?.name ?? 'lap', parts: String(args.parts) })
     }
     case 'mergeLaps': {
       const lap1 = findLap(args.lapId1 as string)
       const lap2 = findLap(args.lapId2 as string)
-      return `Merge "${lap1?.name ?? 'lap'}" and "${lap2?.name ?? 'lap'}"`
+      return m.chat_desc_merge_laps({ lap1: lap1?.name ?? 'lap', lap2: lap2?.name ?? 'lap' })
     }
     default:
       return name
@@ -164,11 +165,15 @@ function buildSuggestions(laps: LapHandle[], actName: string): string[] {
   const suggestions: string[] = []
 
   if (laps.length === 1 && laps[0].pointCount > 20) {
-    suggestions.push(`Split into ${Math.min(Math.ceil(laps[0].stats.distance / 1000), 10)} parts`)
+    suggestions.push(
+      m.chat_suggest_split({
+        count: String(Math.min(Math.ceil(laps[0].stats.distance / 1000), 10)),
+      }),
+    )
   }
 
   if (laps.length >= 2) {
-    suggestions.push(`Merge laps 1 & 2`)
+    suggestions.push(m.chat_suggest_merge())
   }
 
   // Rename suggestions
@@ -177,16 +182,16 @@ function buildSuggestions(laps: LapHandle[], actName: string): string[] {
     genericNames.some((g) => l.name.toLowerCase().includes(g)),
   )
   if (hasGenericName) {
-    suggestions.push('Give laps descriptive names')
+    suggestions.push(m.chat_suggest_rename_laps())
   }
 
   if (actName.toLowerCase().includes('activity') || actName.toLowerCase().includes('unnamed')) {
-    suggestions.push('Rename this activity')
+    suggestions.push(m.chat_suggest_rename_activity())
   }
 
   // Always offer a general one
   if (suggestions.length < 3) {
-    suggestions.push('Summarize this activity')
+    suggestions.push(m.chat_suggest_summarize())
   }
 
   return suggestions.slice(0, 3)
@@ -313,7 +318,7 @@ export function ActivityChat({
       addToolOutput({
         tool: toolName,
         toolCallId,
-        output: 'User rejected this action.',
+        output: m.chat_user_rejected(),
       })
     },
     [addToolOutput],
@@ -369,7 +374,7 @@ export function ActivityChat({
             )}
           </div>
           <div>
-            <span className="text-sm font-semibold tracking-tight">Trail Companion</span>
+            <span className="text-sm font-semibold tracking-tight">{m.chat_title()}</span>
           </div>
         </div>
         <Button variant="ghost" size="icon-xs" onClick={onClose}>
@@ -402,7 +407,7 @@ export function ActivityChat({
             <div className="flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 px-3.5 py-3 text-xs">
               <AlertCircle className="size-3.5 text-destructive shrink-0 mt-0.5" />
               <span className="text-destructive/90">
-                {error.message || 'Something went wrong. Check your API key configuration.'}
+                {error.message || m.chat_error_fallback()}
               </span>
             </div>
           )}
@@ -417,7 +422,7 @@ export function ActivityChat({
             <textarea
               ref={inputRef}
               className="flex-1 resize-none bg-transparent text-sm placeholder:text-muted-foreground/40 outline-none min-h-[24px] max-h-[120px] py-0.5 leading-relaxed"
-              placeholder="Rename, split, merge..."
+              placeholder={m.chat_placeholder()}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -444,8 +449,7 @@ export function ActivityChat({
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground/40 text-center mt-1.5 select-none">
-            Changes can be undone with{' '}
-            <kbd className="font-mono text-muted-foreground/50">Ctrl+Z</kbd>
+            {m.chat_undo_hint()} <kbd className="font-mono text-muted-foreground/50">Ctrl+Z</kbd>
           </p>
         </form>
       </div>
@@ -474,9 +478,9 @@ function EmptyState({
         </div>
       </div>
 
-      <h3 className="font-serif text-lg text-foreground/90 mb-1">Trail Companion</h3>
+      <h3 className="font-serif text-lg text-foreground/90 mb-1">{m.chat_title()}</h3>
       <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-[220px] mb-5">
-        Edit your activity with natural language. Rename, split, or merge laps.
+        {m.chat_empty_desc()}
       </p>
 
       {/* Suggestion chips */}
@@ -578,7 +582,7 @@ function ToolApprovalCard({
       <div className="flex items-center gap-2">
         <Button size="xs" onClick={onApprove} className="gap-1.5">
           <Check className="size-3" />
-          Accept
+          {m.chat_accept()}
         </Button>
         <Button
           size="xs"
@@ -587,7 +591,7 @@ function ToolApprovalCard({
           className="gap-1.5 text-muted-foreground"
         >
           <Ban className="size-3" />
-          Reject
+          {m.chat_reject()}
         </Button>
       </div>
     </div>
@@ -737,7 +741,7 @@ function ChatMessage({
                 className="gap-1.5"
               >
                 <Check className="size-3" />
-                Accept all ({pendingApprovals.length})
+                {m.chat_accept_all({ count: String(pendingApprovals.length) })}
               </Button>
               <Button
                 size="xs"
@@ -750,7 +754,7 @@ function ChatMessage({
                 className="gap-1.5 text-muted-foreground"
               >
                 <Ban className="size-3" />
-                Reject all
+                {m.chat_reject_all()}
               </Button>
             </div>
           </div>

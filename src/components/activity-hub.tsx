@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react'
 import { GpxUpload } from './gpx-upload'
 import { parseToDocument, getLapHandles, countLaps, exportOriginal } from '~/utils/dom-operations'
 import { uploadXml } from '~/utils/xml-storage'
+import * as m from '~/paraglide/messages.js'
 
 export function ActivityHub() {
   const [isLoading, setIsLoading] = useState(false)
@@ -21,7 +22,7 @@ export function ActivityHub() {
         const doc = parseToDocument(xmlString)
         const lapCount = countLaps(doc)
         if (lapCount === 0) {
-          toast.error('No tracks/laps found in this file')
+          toast.error(m.hub_no_tracks())
           return
         }
 
@@ -79,10 +80,10 @@ export function ActivityHub() {
           activityDate,
         })
 
-        toast.success(`Loaded "${doc.name}" with ${laps.length} lap(s)`)
+        toast.success(m.hub_loaded({ name: doc.name, count: String(laps.length) }))
         navigate({ to: '/activities/$slug', params: { slug } })
       } catch (e) {
-        toast.error(`Failed to save activity: ${e instanceof Error ? e.message : 'Unknown error'}`)
+        toast.error(m.hub_save_failed({ error: e instanceof Error ? e.message : 'Unknown error' }))
       } finally {
         setIsLoading(false)
       }

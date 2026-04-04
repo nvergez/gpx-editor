@@ -71,6 +71,7 @@ import { StravaLogo } from '~/utils/strava'
 import { UndoManager } from '~/utils/undo-manager'
 import { useChatStore } from '~/lib/chat-store'
 import { ActivityChat } from './activity-chat'
+import * as m from '~/paraglide/messages.js'
 
 function downloadFile(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType })
@@ -170,7 +171,7 @@ function ActivityNameEditor({
           setEditing(true)
         }}
         className="shrink-0 rounded-md p-1 opacity-0 group-hover/name:opacity-100 hover:bg-muted transition-all"
-        title="Rename activity"
+        title={m.editor_rename_activity()}
       >
         <Pencil className="size-3.5 text-muted-foreground" />
       </button>
@@ -216,29 +217,29 @@ function ActivityStats({ laps }: { laps: LapHandle[] }) {
   }, [laps])
 
   const stats: { icon: typeof Route; label: string; value: string }[] = [
-    { icon: Route, label: 'Distance', value: formatDistance(summary.distance) },
-    { icon: Clock, label: 'Duration', value: formatDuration(summary.duration) },
-    { icon: Gauge, label: 'Pace', value: formatPace(summary.distance, summary.duration) },
+    { icon: Route, label: m.stat_distance(), value: formatDistance(summary.distance) },
+    { icon: Clock, label: m.stat_duration(), value: formatDuration(summary.duration) },
+    { icon: Gauge, label: m.stat_pace(), value: formatPace(summary.distance, summary.duration) },
   ]
   if (summary.elevationGain > 0) {
     stats.push({
       icon: Mountain,
-      label: 'Elevation',
-      value: `${Math.round(summary.elevationGain)} m`,
+      label: m.stat_elevation(),
+      value: `${Math.round(summary.elevationGain)} ${m.stat_unit_m()}`,
     })
   }
   if (summary.avgHr) {
     stats.push({
       icon: Heart,
-      label: 'Avg HR',
-      value: `${summary.avgHr} bpm`,
+      label: m.stat_avg_hr(),
+      value: `${summary.avgHr} ${m.stat_unit_bpm()}`,
     })
   }
   if (summary.avgPower) {
     stats.push({
       icon: Zap,
-      label: 'Avg Power',
-      value: `${summary.avgPower} W`,
+      label: m.stat_avg_power(),
+      value: `${summary.avgPower} ${m.stat_unit_w()}`,
     })
   }
 
@@ -410,11 +411,8 @@ export function GpxEditor({
       splitLap(actDoc, lapId, pointIndices)
       bumpRevision()
       const parts = pointIndices.length + 1
-      toast.success(`Lap split into ${parts} part${parts !== 1 ? 's' : ''}`, {
-        description:
-          activityColumns.length > 0
-            ? 'Custom column values for the split lap have been cleared.'
-            : undefined,
+      toast.success(m.editor_lap_split({ count: String(parts) }), {
+        description: activityColumns.length > 0 ? m.editor_split_columns_cleared() : undefined,
       })
     },
     [actDoc, bumpRevision, activityColumns.length],
@@ -426,11 +424,8 @@ export function GpxEditor({
       undoManagerRef.current.snapshot(actDoc)
       mergeLaps(actDoc, lapIds[0], lapIds[1])
       bumpRevision()
-      toast.success('Laps merged', {
-        description:
-          activityColumns.length > 0
-            ? 'Custom column values for the merged lap have been cleared.'
-            : undefined,
+      toast.success(m.editor_laps_merged(), {
+        description: activityColumns.length > 0 ? m.editor_merge_columns_cleared() : undefined,
       })
     },
     [actDoc, bumpRevision, activityColumns.length],
@@ -471,7 +466,7 @@ export function GpxEditor({
     })
     const baseName = sanitizeFilename(actDoc.name)
     downloadFile(csv, `${baseName}_laps.csv`, 'text/csv')
-    toast.success('Laps exported as CSV')
+    toast.success(m.editor_csv_exported())
   }, [actDoc, laps, builtinVisibility, customColumnConfig])
 
   const handleExportOriginal = useCallback(() => {
@@ -481,7 +476,7 @@ export function GpxEditor({
     const content = exportOriginal(actDoc)
     const mimeType = ext === 'tcx' ? 'application/vnd.garmin.tcx+xml' : 'application/gpx+xml'
     downloadFile(content, `${baseName}_edited.${ext}`, mimeType)
-    toast.success(`${ext.toUpperCase()} file exported (original format)`)
+    toast.success(m.editor_file_exported({ format: ext.toUpperCase() }))
   }, [actDoc])
 
   const doCrossFormatExport = useCallback(
@@ -507,10 +502,10 @@ export function GpxEditor({
 
       if (format === 'tcx') {
         downloadFile(exportTcx(gpxData), `${baseName}_edited.tcx`, 'application/vnd.garmin.tcx+xml')
-        toast.success('TCX file exported')
+        toast.success(m.editor_tcx_exported())
       } else {
         downloadFile(exportGpx(gpxData), `${baseName}_edited.gpx`, 'application/gpx+xml')
-        toast.success('GPX file exported')
+        toast.success(m.editor_gpx_exported())
       }
     },
     [actDoc, laps],
@@ -557,12 +552,12 @@ export function GpxEditor({
   if (!actDoc) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-muted-foreground">Failed to parse activity data.</p>
+        <p className="text-muted-foreground">{m.editor_failed_parse()}</p>
         <Link
           to="/"
           className="mt-4 text-sm text-primary underline underline-offset-2 hover:text-primary/80"
         >
-          Go back
+          {m.common_go_back()}
         </Link>
       </div>
     )
@@ -575,10 +570,9 @@ export function GpxEditor({
           <div className="flex items-start gap-2.5 rounded-xl border border-chart-3/30 bg-chart-3/5 p-3 sm:p-4 text-sm text-foreground">
             <Info className="mt-0.5 size-4 shrink-0 text-chart-3" />
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-xs sm:text-sm">Only 1 lap detected</p>
+              <p className="font-medium text-xs sm:text-sm">{m.editor_one_lap_title()}</p>
               <p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-                GPX files often store all laps as a single track. Try importing the TCX version
-                instead.
+                {m.editor_one_lap_desc()}
               </p>
             </div>
             <button
@@ -595,7 +589,7 @@ export function GpxEditor({
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                {actDoc.sourceFormat.toUpperCase()} Activity
+                {m.editor_activity_label({ format: actDoc.sourceFormat.toUpperCase() })}
               </p>
               {source === 'strava' && stravaActivityId && (
                 <a
@@ -603,10 +597,10 @@ export function GpxEditor({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 rounded-full bg-[#FC4C02]/10 px-2 py-0.5 text-xs text-[#FC4C02] hover:bg-[#FC4C02]/20 transition-colors"
-                  title="View on Strava"
+                  title={m.editor_view_on_strava()}
                 >
                   <StravaLogo className="size-3" />
-                  Strava
+                  {m.editor_strava()}
                 </a>
               )}
             </div>
@@ -618,7 +612,7 @@ export function GpxEditor({
               size="icon-sm"
               onClick={handleUndo}
               disabled={!canUndo}
-              title="Undo (Ctrl+Z)"
+              title={m.editor_undo()}
             >
               <Undo2 className="size-3.5" />
             </Button>
@@ -627,28 +621,28 @@ export function GpxEditor({
               size="icon-sm"
               onClick={handleRedo}
               disabled={!canRedo}
-              title="Redo (Ctrl+Shift+Z)"
+              title={m.editor_redo()}
             >
               <Redo2 className="size-3.5" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger render={<Button size="sm" />}>
                 <FileDown className="size-3.5" />
-                <span className="hidden sm:inline">Export</span>
+                <span className="hidden sm:inline">{m.editor_export()}</span>
                 <ChevronDown className="size-3" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleExportOriginal}>
-                  Export as {actDoc.sourceFormat.toUpperCase()} (original)
+                  {m.editor_export_original({ format: actDoc.sourceFormat.toUpperCase() })}
                 </DropdownMenuItem>
                 {actDoc.sourceFormat !== 'gpx' && (
                   <DropdownMenuItem onClick={() => handleExportCrossFormat('gpx')}>
-                    Export as GPX
+                    {m.editor_export_gpx()}
                   </DropdownMenuItem>
                 )}
                 {actDoc.sourceFormat !== 'tcx' && (
                   <DropdownMenuItem onClick={() => handleExportCrossFormat('tcx')}>
-                    Export as TCX
+                    {m.editor_export_tcx()}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -678,15 +672,15 @@ export function GpxEditor({
 
         {/* Lap table toolbar */}
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-medium text-muted-foreground">Laps</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">{m.editor_laps()}</h3>
           <div className="flex gap-1.5">
             <Button variant="outline" size="sm" onClick={() => setCustomizeOpen(true)}>
               <Settings2 className="size-3.5" />
-              <span className="hidden sm:inline">Customize columns</span>
+              <span className="hidden sm:inline">{m.editor_customize_columns()}</span>
             </Button>
             <Button variant="outline" size="sm" onClick={handleExportCsv}>
               <FileSpreadsheet className="size-3.5" />
-              <span className="hidden sm:inline">Export CSV</span>
+              <span className="hidden sm:inline">{m.editor_export_csv()}</span>
             </Button>
           </div>
         </div>
@@ -719,20 +713,23 @@ export function GpxEditor({
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Convert to {crossFormatTarget?.toUpperCase()}?</AlertDialogTitle>
+              <AlertDialogTitle>
+                {m.editor_convert_title({ format: crossFormatTarget?.toUpperCase() ?? '' })}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                Converting from {actDoc.sourceFormat.toUpperCase()} to{' '}
-                {crossFormatTarget?.toUpperCase()} will lose some data that has no equivalent in the
-                target format
-                {actDoc.sourceFormat === 'tcx' && ' (calories, lap summaries, device info, etc.)'}
-                {actDoc.sourceFormat === 'gpx' && ' (track type, description, links, etc.)'}. Use
-                "Export as {actDoc.sourceFormat.toUpperCase()} (original)" for a lossless export.
+                {m.editor_convert_desc({
+                  source: actDoc.sourceFormat.toUpperCase(),
+                  target: crossFormatTarget?.toUpperCase() ?? '',
+                })}
+                {actDoc.sourceFormat === 'tcx' && m.editor_convert_tcx_loss()}
+                {actDoc.sourceFormat === 'gpx' && m.editor_convert_gpx_loss()}
+                {m.editor_convert_lossless_hint({ format: actDoc.sourceFormat.toUpperCase() })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{m.common_cancel()}</AlertDialogCancel>
               <AlertDialogAction onClick={handleConfirmCrossFormat}>
-                Export anyway
+                {m.editor_export_anyway()}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -747,12 +744,14 @@ export function GpxEditor({
             ? 'lg:scale-0 lg:opacity-0 lg:pointer-events-none'
             : 'lg:scale-100 lg:opacity-100'
         }`}
-        title="AI Assistant"
+        title={m.editor_ai_assistant()}
       >
         <span className="flex items-center justify-center size-12">
           <Sparkles className="size-5" />
         </span>
-        <span className="hidden sm:inline pr-4 text-sm font-medium -ml-1.5">AI</span>
+        <span className="hidden sm:inline pr-4 text-sm font-medium -ml-1.5">
+          {m.editor_ai_short()}
+        </span>
       </button>
 
       {chatOpen && (

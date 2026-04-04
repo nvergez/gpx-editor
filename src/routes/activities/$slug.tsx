@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react'
 import { GpxEditor } from '~/components/gpx-editor'
 import { authClient } from '~/lib/auth-client'
 import { uploadXml } from '~/utils/xml-storage'
+import * as m from '~/paraglide/messages.js'
 
 export const Route = createFileRoute('/activities/$slug')({
   component: ActivityPage,
@@ -38,12 +39,12 @@ function ActivityPage() {
   if (!activity) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-muted-foreground">Activity not found</p>
+        <p className="text-muted-foreground">{m.activity_not_found()}</p>
         <button
           onClick={() => navigate({ to: '/' })}
           className="mt-4 text-sm text-primary underline underline-offset-2"
         >
-          Go back
+          {m.common_go_back()}
         </button>
       </div>
     )
@@ -69,14 +70,14 @@ function ActivityEditor({ activity }: { activity: Doc<'activities'> }) {
       .then((xml) => {
         if (cancelled) return
         if (!xml) {
-          setError('Activity not found')
+          setError(m.activity_not_found())
         } else {
           setXmlContent(xml)
         }
       })
       .catch((err) => {
         if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Failed to load activity')
+        setError(err instanceof Error ? err.message : m.activity_failed_to_load())
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)
@@ -135,12 +136,12 @@ function ActivityEditor({ activity }: { activity: Doc<'activities'> }) {
   if (error || !xmlContent) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-muted-foreground">{error ?? 'Activity not found'}</p>
+        <p className="text-muted-foreground">{error ?? m.activity_not_found()}</p>
         <button
           onClick={() => window.history.back()}
           className="mt-4 text-sm text-primary underline underline-offset-2"
         >
-          Go back
+          {m.common_go_back()}
         </button>
       </div>
     )

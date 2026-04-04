@@ -5,6 +5,7 @@ import { api } from '../../convex/_generated/api'
 import { Upload, MapPin, Mountain, ArrowRight } from 'lucide-react'
 import { StravaActivityPicker } from '~/components/strava-activity-picker'
 import { getStravaAuthUrl, StravaLogo } from '~/utils/strava'
+import * as m from '~/paraglide/messages.js'
 
 interface GpxUploadProps {
   onFileLoaded: (xmlString: string) => void
@@ -87,11 +88,10 @@ export function GpxUpload({ onFileLoaded, onStravaFileLoaded }: GpxUploadProps) 
       {/* Hero area */}
       <div className="text-center mb-10 space-y-3">
         <h2 className="font-serif text-3xl sm:text-4xl tracking-tight text-foreground">
-          Edit your activities
+          {m.upload_hero_title()}
         </h2>
         <p className="text-muted-foreground text-base max-w-md mx-auto leading-relaxed">
-          Split, merge, rename, and reorder laps in your GPX and TCX files. Lossless round-trip
-          editing.
+          {m.upload_hero_desc()}
         </p>
       </div>
 
@@ -121,10 +121,8 @@ export function GpxUpload({ onFileLoaded, onStravaFileLoaded }: GpxUploadProps) 
                 <Upload className="size-6" strokeWidth={1.5} />
               </div>
               <div className="text-center space-y-1.5">
-                <p className="text-base font-medium text-foreground">Import file</p>
-                <p className="text-sm text-muted-foreground">
-                  Drop GPX or TCX here, or click to browse
-                </p>
+                <p className="text-base font-medium text-foreground">{m.upload_import_file()}</p>
+                <p className="text-sm text-muted-foreground">{m.upload_drop_hint()}</p>
               </div>
             </div>
             <input
@@ -151,8 +149,10 @@ export function GpxUpload({ onFileLoaded, onStravaFileLoaded }: GpxUploadProps) 
                       <StravaLogo className="size-6" />
                     </div>
                     <div className="text-center space-y-1.5">
-                      <p className="text-base font-medium text-foreground">Import from Strava</p>
-                      <p className="text-sm text-muted-foreground">Browse your recent activities</p>
+                      <p className="text-base font-medium text-foreground">
+                        {m.upload_import_strava()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{m.upload_browse_strava()}</p>
                     </div>
                   </div>
                 </button>
@@ -180,13 +180,15 @@ export function GpxUpload({ onFileLoaded, onStravaFileLoaded }: GpxUploadProps) 
                       <StravaLogo className="size-6" />
                     </div>
                     <div className="text-center space-y-1.5">
-                      <p className="text-base font-medium text-foreground">Connect Strava</p>
+                      <p className="text-base font-medium text-foreground">
+                        {m.upload_connect_strava()}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        Import activities directly from your account
+                        {m.upload_connect_strava_desc()}
                       </p>
                     </div>
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#FC4C02] opacity-0 translate-y-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
-                      Connect now
+                      {m.upload_connect_now()}
                       <ArrowRight className="size-3" />
                     </span>
                   </div>
@@ -206,9 +208,9 @@ export function GpxUpload({ onFileLoaded, onStravaFileLoaded }: GpxUploadProps) 
       {/* Feature hints */}
       <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-xl w-full">
         {[
-          { icon: MapPin, label: 'Split & merge', desc: 'Break laps apart or combine them' },
-          { icon: Mountain, label: 'Full stats', desc: 'Distance, pace, HR, power, elevation' },
-          { icon: Upload, label: 'Lossless export', desc: 'Preserves all original XML data' },
+          { icon: MapPin, label: m.upload_feature_split(), desc: m.upload_feature_split_desc() },
+          { icon: Mountain, label: m.upload_feature_stats(), desc: m.upload_feature_stats_desc() },
+          { icon: Upload, label: m.upload_feature_export(), desc: m.upload_feature_export_desc() },
         ].map((feat) => (
           <div key={feat.label} className="flex flex-col items-center text-center gap-2 py-3">
             <feat.icon className="size-4.5 text-warm-400 dark:text-warm-500" strokeWidth={1.5} />

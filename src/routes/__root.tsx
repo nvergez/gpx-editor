@@ -22,6 +22,8 @@ import { authClient } from '~/lib/auth-client'
 import { getToken } from '~/lib/auth-server'
 import appCss from '~/styles/app.css?url'
 import { seo } from '~/utils/seo'
+import { getLocale } from '~/paraglide/runtime.js'
+import * as m from '~/paraglide/messages.js'
 
 const getAuth = createServerFn({ method: 'GET' }).handler(() => getToken())
 
@@ -35,7 +37,7 @@ export const Route = createRootRouteWithContext<{
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       ...seo({
         title: 'Lapcraft',
-        description: 'Analyze, edit, and craft your activity laps',
+        description: m.seo_default_description(),
       }),
     ],
     links: [
@@ -71,7 +73,7 @@ function RootComponent() {
         initialToken={context.token}
       >
         <TooltipProvider>
-          <html lang="en">
+          <html lang={getLocale()}>
             <head>
               <HeadContent />
             </head>

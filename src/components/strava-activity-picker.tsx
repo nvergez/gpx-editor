@@ -15,6 +15,7 @@ import { ScrollArea } from '~/components/ui/scroll-area'
 import { stravaToTcx } from '~/utils/strava-to-tcx'
 import { formatDistance, formatDuration } from '~/utils/gpx-parser'
 import { sportIcon, formatActivityDate } from '~/utils/activity-formatting'
+import * as m from '~/paraglide/messages.js'
 
 interface StravaActivityPickerProps {
   open: boolean
@@ -110,8 +111,8 @@ export function StravaActivityPicker({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Import from Strava</DialogTitle>
-          <DialogDescription>Select an activity to load into the editor</DialogDescription>
+          <DialogTitle>{m.strava_import_title()}</DialogTitle>
+          <DialogDescription>{m.strava_import_desc()}</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh] -mx-4 px-4">
@@ -120,7 +121,9 @@ export function StravaActivityPicker({
               <Loader2 className="size-5 animate-spin text-muted-foreground" />
             </div>
           ) : activities.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No activities found</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {m.strava_no_activities()}
+            </p>
           ) : (
             <div className="space-y-1.5">
               {activities.map((activity) => (
@@ -171,7 +174,7 @@ export function StravaActivityPicker({
                     ) : (
                       <ChevronDown className="size-3.5" />
                     )}
-                    Load more
+                    {m.strava_load_more()}
                   </Button>
                 </div>
               )}

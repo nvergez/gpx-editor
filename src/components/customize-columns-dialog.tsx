@@ -45,6 +45,7 @@ import {
 } from '~/components/ui/alert-dialog'
 import { Plus, Trash2, Calculator, PenLine, Share2, Pencil, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
+import * as m from '~/paraglide/messages.js'
 
 interface CustomizeColumnsDialogProps {
   open: boolean
@@ -61,20 +62,22 @@ interface CustomizeColumnsDialogProps {
 
 type CreateMode = 'manual' | 'computed' | null
 
-const BUILTIN_COLUMNS = [
-  { key: 'distance', label: 'Distance' },
-  { key: 'duration', label: 'Duration' },
-  { key: 'pace', label: 'Pace' },
-  { key: 'avgHr', label: 'Avg HR' },
-  { key: 'maxHr', label: 'Max HR' },
-  { key: 'avgCadence', label: 'Cadence' },
-  { key: 'avgPower', label: 'Power' },
-  { key: 'maxSpeed', label: 'Max Speed' },
-  { key: 'calories', label: 'Calories' },
-  { key: 'elevationGain', label: 'Elev +' },
-  { key: 'elevationLoss', label: 'Elev −' },
-  { key: 'pointCount', label: 'Points' },
-] as const
+function getBuiltinColumns() {
+  return [
+    { key: 'distance', label: m.stat_distance() },
+    { key: 'duration', label: m.stat_duration() },
+    { key: 'pace', label: m.stat_pace() },
+    { key: 'avgHr', label: m.stat_avg_hr() },
+    { key: 'maxHr', label: m.stat_max_hr() },
+    { key: 'avgCadence', label: m.stat_cadence() },
+    { key: 'avgPower', label: m.stat_power() },
+    { key: 'maxSpeed', label: m.stat_max_speed() },
+    { key: 'calories', label: m.stat_calories() },
+    { key: 'elevationGain', label: m.stat_elev_gain() },
+    { key: 'elevationLoss', label: m.stat_elev_loss() },
+    { key: 'pointCount', label: m.stat_points() },
+  ] as const
+}
 
 export function CustomizeColumnsDialog({
   open,
@@ -143,7 +146,7 @@ export function CustomizeColumnsDialog({
         : undefined
 
     if (createMode === 'computed' && !formula) {
-      toast.error('Please select both operands for the formula')
+      toast.error(m.columns_formula_error())
       return
     }
 
@@ -167,7 +170,7 @@ export function CustomizeColumnsDialog({
     setNewLeft('')
     setNewRight('')
     setNewOperator('divide')
-    toast.success(`Column "${newName.trim()}" created`)
+    toast.success(m.columns_created({ name: newName.trim() }))
   }
 
   async function handleToggleColumn(def: ColumnDefinition) {
@@ -185,7 +188,7 @@ export function CustomizeColumnsDialog({
   async function handleDeleteColumn(def: ColumnDefinition) {
     await deleteDefinition({ id: def._id })
     setDeletingColumn(null)
-    toast.success(`Column "${def.name}" deleted`)
+    toast.success(m.columns_deleted({ name: def.name }))
   }
 
   async function handleToggleShared(def: ColumnDefinition) {
@@ -230,7 +233,7 @@ export function CustomizeColumnsDialog({
     }
     if (patch.name !== undefined || patch.formula !== undefined) {
       await updateDefinition(patch)
-      toast.success(`Column "${editName.trim()}" updated`)
+      toast.success(m.columns_updated({ name: editName.trim() }))
     }
     setEditingId(null)
   }
@@ -273,18 +276,16 @@ export function CustomizeColumnsDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Customize columns</DialogTitle>
-            <DialogDescription>
-              Toggle built-in columns and manage custom columns for this activity.
-            </DialogDescription>
+            <DialogTitle>{m.columns_title()}</DialogTitle>
+            <DialogDescription>{m.columns_desc()}</DialogDescription>
           </DialogHeader>
 
           {/* Built-in columns */}
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
-              Built-in columns
+              {m.columns_builtin()}
             </p>
-            {BUILTIN_COLUMNS.map((col) => (
+            {getBuiltinColumns().map((col) => (
               <label
                 key={col.key}
                 className="flex items-center justify-between py-1.5 px-1 rounded-md hover:bg-muted/50 cursor-pointer"
@@ -303,7 +304,7 @@ export function CustomizeColumnsDialog({
           {activeCustomColumns.length > 0 && (
             <div className="space-y-1 border-t border-border/60 pt-3">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
-                Custom columns
+                {m.columns_custom()}
               </p>
               {activeCustomColumns.map(({ link, def }) => {
                 const isEditing = editingId === def._id
@@ -332,7 +333,7 @@ export function CustomizeColumnsDialog({
                           <button
                             onClick={() => startEditing(def)}
                             className="p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors"
-                            title="Edit column"
+                            title={m.columns_edit()}
                           >
                             <Pencil className="size-3" />
                           </button>
@@ -344,9 +345,7 @@ export function CustomizeColumnsDialog({
                                 : 'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted'
                             }`}
                             title={
-                              def.isShared
-                                ? 'Shared (click to unshare)'
-                                : 'Make available to other activities'
+                              def.isShared ? m.columns_shared_unshare() : m.columns_make_shared()
                             }
                           >
                             <Share2 className="size-3" />
@@ -354,7 +353,7 @@ export function CustomizeColumnsDialog({
                           <button
                             onClick={() => confirmDelete(def)}
                             className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                            title="Delete column"
+                            title={m.columns_delete()}
                           >
                             <Trash2 className="size-3" />
                           </button>
@@ -367,7 +366,7 @@ export function CustomizeColumnsDialog({
                       <div className="space-y-2.5 pt-1.5 pb-1">
                         <div className="space-y-1">
                           <Label htmlFor={`edit-name-${def._id}`} className="text-xs">
-                            Name
+                            {m.common_name()}
                           </Label>
                           <Input
                             id={`edit-name-${def._id}`}
@@ -444,7 +443,7 @@ export function CustomizeColumnsDialog({
                         <div className="flex gap-1.5 justify-end">
                           <Button size="sm" variant="ghost" onClick={cancelEditing}>
                             <X className="size-3.5" />
-                            Cancel
+                            {m.common_cancel()}
                           </Button>
                           <Button
                             size="sm"
@@ -452,7 +451,7 @@ export function CustomizeColumnsDialog({
                             disabled={!editName.trim()}
                           >
                             <Check className="size-3.5" />
-                            Save
+                            {m.common_save()}
                           </Button>
                         </div>
                       </div>
@@ -467,7 +466,7 @@ export function CustomizeColumnsDialog({
           {availableShared.length > 0 && (
             <div className="space-y-1 border-t border-border/60 pt-3">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
-                Available shared columns
+                {m.columns_available_shared()}
               </p>
               {availableShared.map((def) => (
                 <div
@@ -482,7 +481,7 @@ export function CustomizeColumnsDialog({
                   <span className="text-sm flex-1 truncate">{def.name}</span>
                   <Button size="sm" variant="ghost" onClick={() => handleToggleColumn(def)}>
                     <Plus className="size-3.5" />
-                    Add
+                    {m.common_add()}
                   </Button>
                 </div>
               ))}
@@ -499,7 +498,7 @@ export function CustomizeColumnsDialog({
                 onClick={() => setCreateMode('manual')}
               >
                 <PenLine className="size-3.5" />
-                Manual column
+                {m.columns_manual()}
               </Button>
               <Button
                 size="sm"
@@ -508,19 +507,23 @@ export function CustomizeColumnsDialog({
                 onClick={() => setCreateMode('computed')}
               >
                 <Calculator className="size-3.5" />
-                Computed column
+                {m.columns_computed()}
               </Button>
             </div>
           ) : (
             <div className="space-y-3 border-t border-border/60 pt-3">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                New {createMode} column
+                {createMode === 'manual' ? m.columns_new_manual() : m.columns_new_computed()}
               </p>
               <div className="space-y-1.5">
-                <Label htmlFor="col-name">Name</Label>
+                <Label htmlFor="col-name">{m.common_name()}</Label>
                 <Input
                   id="col-name"
-                  placeholder={createMode === 'manual' ? 'e.g., Stroke count' : 'e.g., Strokes/sec'}
+                  placeholder={
+                    createMode === 'manual'
+                      ? m.columns_manual_placeholder()
+                      : m.columns_computed_placeholder()
+                  }
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   className="h-8"
@@ -530,7 +533,7 @@ export function CustomizeColumnsDialog({
 
               {createMode === 'computed' && (
                 <div className="space-y-2">
-                  <Label>Formula</Label>
+                  <Label>{m.columns_formula()}</Label>
                   <div className="flex items-center gap-2">
                     <Select value={newLeft} onValueChange={(v) => setNewLeft(v as string)}>
                       <SelectTrigger size="sm" className="flex-1">
@@ -592,10 +595,10 @@ export function CustomizeColumnsDialog({
                     setNewRight('')
                   }}
                 >
-                  Cancel
+                  {m.common_cancel()}
                 </Button>
                 <Button size="sm" onClick={handleCreate} disabled={!newName.trim()}>
-                  Create
+                  {m.common_create()}
                 </Button>
               </div>
             </div>
@@ -612,20 +615,22 @@ export function CustomizeColumnsDialog({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete column?</AlertDialogTitle>
+            <AlertDialogTitle>{m.columns_delete_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deletingColumn?.name}" is used by computed columns:{' '}
-              {deletingColumn &&
-                getDependents(deletingColumn._id)
-                  .map((d) => `"${d.name}"`)
-                  .join(', ')}
-              . Deleting it will also delete those computed columns and all their data.
+              {m.columns_delete_cascade({
+                name: deletingColumn?.name ?? '',
+                deps: deletingColumn
+                  ? getDependents(deletingColumn._id)
+                      .map((d) => `"${d.name}"`)
+                      .join(', ')
+                  : '',
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{m.common_cancel()}</AlertDialogCancel>
             <AlertDialogAction onClick={() => deletingColumn && handleDeleteColumn(deletingColumn)}>
-              Delete all
+              {m.columns_delete_all()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
