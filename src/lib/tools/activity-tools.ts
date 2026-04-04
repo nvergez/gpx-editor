@@ -18,14 +18,6 @@ export const activityTools = {
     }),
   }),
 
-  deleteLap: tool({
-    description:
-      'Delete a lap from the activity. The user can undo this with Ctrl+Z. Use the lap ID from the activity context.',
-    inputSchema: z.object({
-      lapId: z.string().describe('The ID of the lap to delete'),
-    }),
-  }),
-
   splitLap: tool({
     description:
       'Split a lap into multiple equal parts by distributing trackpoints evenly. The resulting laps will be numbered sequentially.',

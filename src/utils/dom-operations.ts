@@ -220,13 +220,6 @@ function findLapElement(actDoc: ActivityDocument, lapId: string): Element | null
   return elements.find((el) => getLapId(el) === lapId) || null
 }
 
-export function deleteLap(actDoc: ActivityDocument, lapId: string): void {
-  const el = findLapElement(actDoc, lapId)
-  if (!el || !el.parentNode) return
-  el.parentNode.removeChild(el)
-  actDoc.lapNames.delete(lapId)
-}
-
 export function renameLap(actDoc: ActivityDocument, lapId: string, name: string): void {
   if (actDoc.sourceFormat === 'gpx') {
     const el = findLapElement(actDoc, lapId)
@@ -276,24 +269,6 @@ export function renameActivity(actDoc: ActivityDocument, name: string): void {
         activity.insertBefore(notes, activity.firstChild)
       }
     }
-  }
-}
-
-export function reorderLaps(actDoc: ActivityDocument, orderedIds: string[]): void {
-  const elements = getLapElements(actDoc)
-  const byId = new Map(elements.map((el) => [getLapId(el), el]))
-  const parent = elements[0]?.parentNode
-  if (!parent) return
-
-  // Remove all laps from parent
-  for (const el of elements) {
-    parent.removeChild(el)
-  }
-
-  // Re-insert in new order
-  for (const id of orderedIds) {
-    const el = byId.get(id)
-    if (el) parent.appendChild(el)
   }
 }
 

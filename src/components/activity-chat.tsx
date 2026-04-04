@@ -14,7 +14,6 @@ import {
   X,
   Pencil,
   Scissors,
-  Trash2,
   Merge,
   Sparkles,
   Check,
@@ -28,7 +27,6 @@ import { formatDistance, formatDuration, formatPace, formatSpeed } from '~/utils
 interface MutationCallbacks {
   onRenameActivity: (name: string) => void
   onRenameLap: (lapId: string, name: string) => void
-  onDeleteLap: (lapId: string) => void
   onSplitLap: (lapId: string, pointIndices: number[]) => void
   onMergeLaps: (lapIds: [string, string]) => void
 }
@@ -72,7 +70,6 @@ interface ToolMeta {
 const TOOL_META: Record<string, ToolMeta> = {
   renameActivity: { label: 'Rename activity', icon: Pencil, requiresApproval: true },
   renameLap: { label: 'Rename lap', icon: Pencil, requiresApproval: true },
-  deleteLap: { label: 'Delete lap', icon: Trash2, requiresApproval: true },
   splitLap: { label: 'Split lap', icon: Scissors, requiresApproval: true },
   mergeLaps: { label: 'Merge laps', icon: Merge, requiresApproval: true },
   getLapDetails: { label: 'Reading lap details', icon: MapPin, requiresApproval: false },
@@ -88,10 +85,6 @@ function describeToolCall(name: string, args: Record<string, unknown>, laps: Lap
     case 'renameLap': {
       const lap = findLap(args.lapId as string)
       return `Rename "${lap?.name ?? 'lap'}" → "${args.name}"`
-    }
-    case 'deleteLap': {
-      const lap = findLap(args.lapId as string)
-      return `Delete "${lap?.name ?? 'lap'}"`
     }
     case 'splitLap': {
       const lap = findLap(args.lapId as string)
@@ -123,12 +116,6 @@ function executeTool(
       const { lapId, name } = args as { lapId: string; name: string }
       callbacks.onRenameLap(lapId, name)
       return `Lap renamed to "${name}"`
-    }
-    case 'deleteLap': {
-      const lapId = args.lapId as string
-      const lap = laps.find((l) => l.id === lapId)
-      callbacks.onDeleteLap(lapId)
-      return `Lap "${lap?.name ?? lapId}" deleted`
     }
     case 'splitLap': {
       const { lapId, parts } = args as { lapId: string; parts: number }
@@ -184,10 +171,6 @@ function buildSuggestions(laps: LapHandle[], actName: string): string[] {
     suggestions.push(`Merge laps 1 & 2`)
   }
 
-  if (laps.length > 3) {
-    suggestions.push('Delete the shortest lap')
-  }
-
   // Rename suggestions
   const genericNames = ['lap', 'unnamed', 'track', 'segment']
   const hasGenericName = laps.some((l) =>
@@ -216,7 +199,6 @@ export function ActivityChat({
   onClose,
   onRenameActivity,
   onRenameLap,
-  onDeleteLap,
   onSplitLap,
   onMergeLaps,
 }: ActivityChatProps) {
@@ -230,7 +212,6 @@ export function ActivityChat({
   const callbacksRef = useRef<MutationCallbacks>({
     onRenameActivity,
     onRenameLap,
-    onDeleteLap,
     onSplitLap,
     onMergeLaps,
   })
@@ -241,11 +222,10 @@ export function ActivityChat({
     callbacksRef.current = {
       onRenameActivity,
       onRenameLap,
-      onDeleteLap,
       onSplitLap,
       onMergeLaps,
     }
-  }, [actDoc, laps, onRenameActivity, onRenameLap, onDeleteLap, onSplitLap, onMergeLaps])
+  }, [actDoc, laps, onRenameActivity, onRenameLap, onSplitLap, onMergeLaps])
 
   const transport = useMemo(
     () =>
@@ -437,7 +417,7 @@ export function ActivityChat({
             <textarea
               ref={inputRef}
               className="flex-1 resize-none bg-transparent text-sm placeholder:text-muted-foreground/40 outline-none min-h-[24px] max-h-[120px] py-0.5 leading-relaxed"
-              placeholder="Rename, split, merge, delete..."
+              placeholder="Rename, split, merge..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -496,7 +476,7 @@ function EmptyState({
 
       <h3 className="font-serif text-lg text-foreground/90 mb-1">Trail Companion</h3>
       <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-[220px] mb-5">
-        Edit your activity with natural language. Rename, split, merge, or delete laps.
+        Edit your activity with natural language. Rename, split, or merge laps.
       </p>
 
       {/* Suggestion chips */}

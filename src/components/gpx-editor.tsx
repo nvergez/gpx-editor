@@ -16,12 +16,10 @@ import {
   parseToDocument,
   getLapHandles,
   countLaps,
-  deleteLap,
   splitLap,
   mergeLaps,
   renameLap,
   renameActivity,
-  reorderLaps,
   exportOriginal,
   getTrackPointsFromElement,
 } from '~/utils/dom-operations'
@@ -405,17 +403,6 @@ export function GpxEditor({
     }
   }, [])
 
-  const handleDeleteLap = useCallback(
-    (lapId: string) => {
-      if (!actDoc) return
-      undoManagerRef.current.snapshot(actDoc)
-      deleteLap(actDoc, lapId)
-      bumpRevision()
-      toast.success('Lap deleted')
-    },
-    [actDoc, bumpRevision],
-  )
-
   const handleSplitLap = useCallback(
     (lapId: string, pointIndices: number[]) => {
       if (!actDoc) return
@@ -464,19 +451,6 @@ export function GpxEditor({
       if (!actDoc) return
       undoManagerRef.current.snapshot(actDoc)
       renameActivity(actDoc, newName)
-      bumpRevision()
-    },
-    [actDoc, bumpRevision],
-  )
-
-  const handleReorderLaps = useCallback(
-    (reorderedLaps: LapHandle[]) => {
-      if (!actDoc) return
-      undoManagerRef.current.snapshot(actDoc)
-      reorderLaps(
-        actDoc,
-        reorderedLaps.map((l) => l.id),
-      )
       bumpRevision()
     },
     [actDoc, bumpRevision],
@@ -720,11 +694,9 @@ export function GpxEditor({
         <LapTable
           laps={laps}
           sourceFormat={actDoc.sourceFormat}
-          onDelete={handleDeleteLap}
           onSplit={handleSplitLap}
           onMerge={handleMergeLaps}
           onRename={handleRenameLap}
-          onReorder={handleReorderLaps}
           hoveredLapId={hoveredLapId}
           onHoverLap={setHoveredLapId}
           customColumns={customColumnConfig}
@@ -794,7 +766,6 @@ export function GpxEditor({
               onClose={() => setChatOpen(false)}
               onRenameActivity={handleRenameActivity}
               onRenameLap={handleRenameLap}
-              onDeleteLap={handleDeleteLap}
               onSplitLap={handleSplitLap}
               onMergeLaps={handleMergeLaps}
             />
@@ -818,7 +789,6 @@ export function GpxEditor({
                 onClose={() => setChatOpen(false)}
                 onRenameActivity={handleRenameActivity}
                 onRenameLap={handleRenameLap}
-                onDeleteLap={handleDeleteLap}
                 onSplitLap={handleSplitLap}
                 onMergeLaps={handleMergeLaps}
               />

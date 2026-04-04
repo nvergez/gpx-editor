@@ -37,25 +37,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '~/components/ui/alert-dialog'
 import { SplitDialog } from './split-dialog'
 import {
   MoreHorizontal,
   Pencil,
-  ChevronUp,
-  ChevronDown,
   Scissors,
   Merge,
-  Trash2,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -72,11 +59,9 @@ export interface CustomColumnConfig {
 interface LapTableProps {
   laps: LapHandle[]
   sourceFormat: 'gpx' | 'tcx'
-  onDelete: (lapId: string) => void
   onSplit: (lapId: string, pointIndices: number[]) => void
   onMerge: (lapIds: [string, string]) => void
   onRename: (lapId: string, newName: string) => void
-  onReorder: (laps: LapHandle[]) => void
   hoveredLapId?: string | null
   onHoverLap?: (lapId: string | null) => void
   customColumns?: CustomColumnConfig
@@ -175,11 +160,9 @@ function InlineNumberInput({
 export function LapTable({
   laps,
   sourceFormat,
-  onDelete,
   onSplit,
   onMerge,
   onRename,
-  onReorder,
   hoveredLapId,
   onHoverLap,
   customColumns,
@@ -188,10 +171,7 @@ export function LapTable({
   const [sorting, setSorting] = useState<SortingState>([])
   const [editingLapId, setEditingLapId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
-  const [deletingLap, setDeletingLap] = useState<LapHandle | null>(null)
   const [splitLap, setSplitLap] = useState<LapHandle | null>(null)
-
-  const isSorted = sorting.length > 0
 
   const startEditing = useCallback((lap: LapHandle) => {
     setEditName(lap.name)
@@ -211,17 +191,6 @@ export function LapTable({
   const cancelEditing = useCallback(() => {
     setEditingLapId(null)
   }, [])
-
-  const moveLap = useCallback(
-    (index: number, direction: 'up' | 'down') => {
-      const newIndex = direction === 'up' ? index - 1 : index + 1
-      if (newIndex < 0 || newIndex >= laps.length) return
-      const newLaps = [...laps]
-      ;[newLaps[index], newLaps[newIndex]] = [newLaps[newIndex], newLaps[index]]
-      onReorder(newLaps)
-    },
-    [laps, onReorder],
-  )
 
   const columnVisibility = useMemo<VisibilityState>(() => {
     const has = (key: keyof LapHandle['stats']) => laps.some((l) => l.stats[key] != null)
@@ -454,7 +423,6 @@ export function LapTable({
         cell: (info) => {
           const lap = info.row.original
           const index = info.row.index
-          const isFirst = index === 0
           const isLast = index === laps.length - 1
           return (
             <DropdownMenu>
@@ -465,26 +433,6 @@ export function LapTable({
                 <DropdownMenuItem onClick={() => startEditing(lap)}>
                   <Pencil className="size-3.5" />
                   Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => moveLap(index, 'up')}
-                  disabled={isFirst || isSorted}
-                >
-                  <ChevronUp className="size-3.5" />
-                  Move up
-                  {isSorted && (
-                    <span className="ml-auto text-xs text-muted-foreground">sorted</span>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => moveLap(index, 'down')}
-                  disabled={isLast || isSorted}
-                >
-                  <ChevronDown className="size-3.5" />
-                  Move down
-                  {isSorted && (
-                    <span className="ml-auto text-xs text-muted-foreground">sorted</span>
-                  )}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setSplitLap(lap)} disabled={lap.pointCount < 3}>
@@ -497,11 +445,6 @@ export function LapTable({
                     Merge with next
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onClick={() => setDeletingLap(lap)}>
-                  <Trash2 className="size-3.5" />
-                  Delete
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )
@@ -513,11 +456,9 @@ export function LapTable({
       laps,
       editingLapId,
       editName,
-      isSorted,
       startEditing,
       commitRename,
       cancelEditing,
-      moveLap,
       onMerge,
       sortedCustomCols,
       valueLookup,
@@ -744,34 +685,6 @@ export function LapTable({
           </TableFooter>
         </Table>
       </div>
-
-      {/* Delete confirmation dialog */}
-      <AlertDialog
-        open={deletingLap !== null}
-        onOpenChange={(open) => !open && setDeletingLap(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete lap?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove "{deletingLap?.name}" (
-              {deletingLap ? formatDistance(deletingLap.stats.distance) : ''}). This action cannot
-              be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deletingLap) onDelete(deletingLap.id)
-                setDeletingLap(null)
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Split dialog */}
       {splitLap && (

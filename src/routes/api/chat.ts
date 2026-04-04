@@ -61,8 +61,9 @@ ${lapList || '(no laps)'}
 - You can call multiple tools in one response if the user requests multiple changes.
 - After changes, briefly confirm what you did.
 - Keep responses concise and friendly.
-- If the request is ambiguous (e.g. "delete the third lap" when IDs are needed), map the user's description to the correct lap ID from the list above.
+- If the request is ambiguous, map the user's description to the correct lap ID from the list above.
 - All changes can be undone with Ctrl+Z.
+- You cannot delete or reorder laps. All operations preserve every trackpoint — laps are just organizational boundaries over the same GPS data.
 - When splitting, the number of parts must be between 2 and 20.
 - When merging, the two laps must be adjacent (consecutive in the list).
 - Use getLapDetails to fetch full statistics (pace, HR, cadence, power, calories, elevation gain/loss, max speed) before answering analytical questions like "which lap was fastest" or "compare my laps". The lap list above only has basic info.`
