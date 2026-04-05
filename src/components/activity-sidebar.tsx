@@ -303,6 +303,7 @@ export function ActivitySidebar() {
         </SidebarContent>
 
         <SidebarFooter>
+          <ImpersonationBadge />
           <CreditBadge />
           <SidebarUserFooter />
         </SidebarFooter>
@@ -454,6 +455,39 @@ function SidebarUserFooter() {
       </SidebarMenu>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
+  )
+}
+
+function ImpersonationBadge() {
+  const { data: session } = authClient.useSession()
+
+  const isImpersonating = !!(session?.session as Record<string, unknown> | undefined)
+    ?.impersonatedBy
+
+  if (!isImpersonating) return null
+
+  async function handleStop() {
+    try {
+      await authClient.admin.stopImpersonating()
+      window.location.href = '/admin'
+    } catch {
+      // page will reload
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleStop}
+      className="mx-2 flex items-center gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-left transition-colors hover:bg-amber-500/10"
+    >
+      <Shield className="size-3.5 shrink-0 text-amber-500" />
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-amber-500">Impersonating</p>
+        <p className="truncate text-[11px] text-amber-500/70">{session?.user?.email}</p>
+      </div>
+      <LogOut className="size-3.5 shrink-0 text-amber-500/60" />
+    </button>
   )
 }
 
