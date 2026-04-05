@@ -27,7 +27,7 @@ export async function getProfileByToken(
 }
 
 /** Get or create the user profile (lazy upsert). Mutation context required for insert. */
-async function ensureProfileMut(
+export async function ensureProfileMut(
   ctx: MutationCtx,
   tokenIdentifier: string,
 ): Promise<Doc<'userProfiles'>> {

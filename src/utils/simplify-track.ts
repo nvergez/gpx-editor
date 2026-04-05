@@ -27,7 +27,13 @@ function perpendicularDistance(point: LatLng, lineStart: LatLng, lineEnd: LatLng
 }
 
 /** Mark points to keep in the `keep` array using index-based recursion. */
-function rdpMark(points: LatLng[], start: number, end: number, epsilon: number, keep: boolean[]): void {
+function rdpMark(
+  points: LatLng[],
+  start: number,
+  end: number,
+  epsilon: number,
+  keep: boolean[],
+): void {
   if (end - start <= 1) return
 
   let maxDist = 0

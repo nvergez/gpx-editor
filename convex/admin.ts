@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { authComponent } from './auth'
-import { getProfileByToken, logTransaction } from './credits'
+import { ensureProfileMut, getProfileByToken, logTransaction } from './credits'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,6 +57,19 @@ export const getProfile = query({
 // ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
+
+/** Create a user profile (admin only). Used when a user hasn't opened the app yet. */
+export const createProfile = mutation({
+  args: {
+    tokenIdentifier: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx)
+    if (!admin) throw new Error('Forbidden: admin role required')
+
+    return await ensureProfileMut(ctx, args.tokenIdentifier)
+  },
+})
 
 /** Grant purchased credits to a user (admin only). */
 export const grantCredits = mutation({

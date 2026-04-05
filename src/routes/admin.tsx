@@ -105,12 +105,17 @@ function AdminPage() {
   }
 
   // Build a lookup: userId (extracted from tokenIdentifier) → profile
+  // tokenIdentifier format: "<issuer>|<userId>"
   const profileByUserId = new Map<string, UserProfile>()
+  let tokenIdentifierPrefix: string | null = null
   if (profiles) {
     for (const p of profiles) {
-      // tokenIdentifier is typically "provider|<userId>"
-      const parts = p.tokenIdentifier.split('|')
-      const userId = parts[parts.length - 1]
+      const pipeIdx = p.tokenIdentifier.lastIndexOf('|')
+      if (pipeIdx === -1) continue
+      const userId = p.tokenIdentifier.slice(pipeIdx + 1)
+      if (!tokenIdentifierPrefix) {
+        tokenIdentifierPrefix = p.tokenIdentifier.slice(0, pipeIdx)
+      }
       if (userId) profileByUserId.set(userId, p as unknown as UserProfile)
     }
   }
@@ -198,6 +203,7 @@ function AdminPage() {
                 key={user.id}
                 user={user}
                 profile={profile as unknown as UserProfile | undefined}
+                tokenIdentifierPrefix={tokenIdentifierPrefix}
                 isImpersonating={impersonating === user.id}
                 onImpersonate={() => handleImpersonate(user.id)}
                 onRefresh={refetchProfiles}
@@ -217,12 +223,14 @@ function AdminPage() {
 function UserRow({
   user,
   profile,
+  tokenIdentifierPrefix,
   isImpersonating,
   onImpersonate,
   onRefresh,
 }: {
   user: BetterAuthUser
   profile: UserProfile | undefined
+  tokenIdentifierPrefix: string | null
   isImpersonating: boolean
   onImpersonate: () => void
   onRefresh: () => void
@@ -231,6 +239,7 @@ function UserRow({
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
 
   const grantCreditsFn = useConvexMutation(api.admin.grantCredits)
+  const createProfileFn = useConvexMutation(api.admin.createProfile)
 
   const isAdmin = user.role === 'admin'
   const plan = profile?.plan ?? 'free'
@@ -415,9 +424,41 @@ function UserRow({
       )}
 
       {!profile && (
-        <p className="text-[11px] text-muted-foreground/60 pt-1 border-t border-border/50">
-          No profile yet (user hasn't opened the app).
-        </p>
+        <div className="flex items-center justify-between pt-1 border-t border-border/50">
+          <p className="text-[11px] text-muted-foreground/60">
+            No profile yet (user hasn't opened the app).
+          </p>
+          {tokenIdentifierPrefix && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1 text-xs"
+              disabled={loadingAction === 'create-profile'}
+              onClick={async () => {
+                setLoadingAction('create-profile')
+                try {
+                  await createProfileFn({
+                    tokenIdentifier: `${tokenIdentifierPrefix}|${user.id}`,
+                  })
+                  toast.success('Profile created')
+                  onRefresh()
+                } catch (e) {
+                  toast.error('Failed to create profile')
+                  console.error(e)
+                } finally {
+                  setLoadingAction(null)
+                }
+              }}
+            >
+              {loadingAction === 'create-profile' ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <Plus className="size-3" />
+              )}
+              Create profile
+            </Button>
+          )}
+        </div>
       )}
     </div>
   )

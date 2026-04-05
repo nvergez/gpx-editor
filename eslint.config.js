@@ -4,7 +4,17 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import eslintConfigPrettier from 'eslint-config-prettier'
 
 export default [
-  { ignores: ['.output/', '.vercel/', 'dist/', 'convex/_generated/', 'src/routeTree.gen.ts'] },
+  {
+    ignores: [
+      '.output/',
+      '.vercel/',
+      'dist/',
+      'convex/_generated/',
+      'convex/betterAuth/_generated/',
+      'src/paraglide/',
+      'src/routeTree.gen.ts',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
