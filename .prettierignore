@@ -7,3 +7,4 @@ pnpm-lock.yaml
 routeTree.gen.ts
 .env.example
 convex/_generated
+convex/betterAuth/_generated
