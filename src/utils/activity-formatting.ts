@@ -1,3 +1,10 @@
+/** Returns true for sports where pace (min/km) is the natural metric */
+export function isPaceSport(sport?: string): boolean {
+  if (!sport) return true // default to pace when unknown
+  const lower = sport.toLowerCase()
+  return lower.includes('run') || lower.includes('hik') || lower.includes('walk')
+}
+
 /** Map sport type string to an emoji icon */
 export function sportIcon(sport?: string): string {
   if (!sport) return '\u{1F3CB}\u{FE0F}'

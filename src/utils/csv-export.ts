@@ -1,6 +1,12 @@
 import type { LapHandle } from './dom-model'
 import type { LapStats } from './gpx-parser'
-import { formatDistance, formatDuration, formatPace, formatSpeed } from './gpx-parser'
+import {
+  formatDistance,
+  formatDuration,
+  formatPace,
+  formatAvgSpeed,
+  formatSpeed,
+} from './gpx-parser'
 import type { ColumnDefinition, ActivityColumn, ColumnValue } from './custom-columns'
 import {
   evaluateFormula,
@@ -12,6 +18,8 @@ import {
 
 interface CsvExportOptions {
   laps: LapHandle[]
+  /** Whether to use pace (true) or avg speed (false) for the pace column */
+  usePace: boolean
   /** Built-in column visibility (key → visible) */
   builtinVisibility: Record<string, boolean>
   /** Custom column config */
@@ -36,7 +44,7 @@ const BUILTIN_FORMATTERS: Record<
     format: (stats) => formatDuration(stats.duration),
   },
   pace: {
-    header: 'Pace',
+    header: 'Pace', // header is overridden dynamically in exportLapsCsv
     format: (stats) => formatPace(stats.distance, stats.duration),
   },
   avgHr: {
@@ -86,11 +94,23 @@ function escapeCsv(value: string): string {
 
 export function exportLapsCsv({
   laps,
+  usePace,
   builtinVisibility,
   customColumns,
 }: CsvExportOptions): string {
   const headers: string[] = ['#', 'Name']
   const builtinKeys: string[] = []
+
+  // Build formatters with dynamic pace/speed header
+  const formatters: Record<
+    string,
+    { header: string; format: (stats: LapStats, lap: LapHandle) => string }
+  > = {
+    ...BUILTIN_FORMATTERS,
+    pace: usePace
+      ? { header: 'Pace', format: (stats) => formatPace(stats.distance, stats.duration) }
+      : { header: 'Avg Speed', format: (stats) => formatAvgSpeed(stats.distance, stats.duration) },
+  }
 
   // Built-in columns that are visible
   const allBuiltinKeys = [
@@ -109,7 +129,7 @@ export function exportLapsCsv({
   ]
   for (const key of allBuiltinKeys) {
     if (builtinVisibility[key] !== false) {
-      const fmt = BUILTIN_FORMATTERS[key]
+      const fmt = formatters[key]
       if (fmt) {
         headers.push(fmt.header)
         builtinKeys.push(key)
@@ -139,7 +159,7 @@ export function exportLapsCsv({
     const row: string[] = [`${i + 1}`, escapeCsv(lap.name)]
 
     for (const key of builtinKeys) {
-      row.push(escapeCsv(BUILTIN_FORMATTERS[key].format(lap.stats, lap)))
+      row.push(escapeCsv(formatters[key].format(lap.stats, lap)))
     }
 
     for (const def of sortedCustom) {

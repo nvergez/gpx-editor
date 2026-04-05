@@ -153,6 +153,7 @@ function ActivityEditor({ activity }: { activity: Doc<'activities'> }) {
       activityId={activityId}
       initialXml={xmlContent}
       source={activity.source}
+      sport={activity.sport}
       stravaActivityId={activity.stravaActivityId ?? undefined}
       onSave={handleSave}
     />

@@ -10,7 +10,9 @@ import {
   formatDistance,
   formatDuration,
   formatPace,
+  formatAvgSpeed,
 } from '~/utils/gpx-parser'
+import { isPaceSport } from '~/utils/activity-formatting'
 import {
   parseToDocument,
   getLapHandles,
@@ -179,7 +181,7 @@ function ActivityNameEditor({
   )
 }
 
-function ActivityStats({ laps }: { laps: LapHandle[] }) {
+function ActivityStats({ laps, usePace }: { laps: LapHandle[]; usePace: boolean }) {
   const summary = useMemo(() => {
     let distance = 0
     let duration = 0
@@ -219,7 +221,13 @@ function ActivityStats({ laps }: { laps: LapHandle[] }) {
   const stats: { icon: typeof Route; label: string; value: string }[] = [
     { icon: Route, label: m.stat_distance(), value: formatDistance(summary.distance) },
     { icon: Clock, label: m.stat_duration(), value: formatDuration(summary.duration) },
-    { icon: Gauge, label: m.stat_pace(), value: formatPace(summary.distance, summary.duration) },
+    usePace
+      ? { icon: Gauge, label: m.stat_pace(), value: formatPace(summary.distance, summary.duration) }
+      : {
+          icon: Gauge,
+          label: m.stat_avg_speed(),
+          value: formatAvgSpeed(summary.distance, summary.duration),
+        },
   ]
   if (summary.elevationGain > 0) {
     stats.push({
@@ -284,6 +292,7 @@ interface GpxEditorProps {
   activityId: Id<'activities'>
   initialXml: string
   source: 'file' | 'strava'
+  sport?: string
   stravaActivityId?: number
   onSave: (data: {
     activityId: Id<'activities'>
@@ -300,9 +309,11 @@ export function GpxEditor({
   activityId,
   initialXml,
   source,
+  sport,
   stravaActivityId,
   onSave,
 }: GpxEditorProps) {
+  const usePace = isPaceSport(sport)
   const [actDoc] = useState<ActivityDocument | null>(() => {
     try {
       const doc = parseToDocument(initialXml)
@@ -517,6 +528,7 @@ export function GpxEditor({
     if (!actDoc) return
     const csv = exportLapsCsv({
       laps,
+      usePace,
       builtinVisibility,
       customColumns: customColumnConfig
         ? {
@@ -529,7 +541,7 @@ export function GpxEditor({
     const baseName = sanitizeFilename(actDoc.name)
     downloadFile(csv, `${baseName}_laps.csv`, 'text/csv')
     toast.success(m.editor_csv_exported())
-  }, [actDoc, laps, builtinVisibility, customColumnConfig])
+  }, [actDoc, laps, usePace, builtinVisibility, customColumnConfig])
 
   const handleExportOriginal = useCallback(() => {
     if (!actDoc) return
@@ -712,7 +724,7 @@ export function GpxEditor({
           </div>
         </div>
 
-        <ActivityStats laps={laps} />
+        <ActivityStats laps={laps} usePace={usePace} />
 
         <ActivityMap
           laps={laps}
@@ -730,7 +742,12 @@ export function GpxEditor({
           onHoverLap={setHoveredLapId}
         />
 
-        <LapPaceChart laps={laps} hoveredLapId={hoveredLapId} onHoverLap={setHoveredLapId} />
+        <LapPaceChart
+          laps={laps}
+          usePace={usePace}
+          hoveredLapId={hoveredLapId}
+          onHoverLap={setHoveredLapId}
+        />
 
         {/* Lap table toolbar */}
         <div className="flex items-center justify-between gap-2">
@@ -750,6 +767,7 @@ export function GpxEditor({
         <LapTable
           laps={laps}
           sourceFormat={actDoc.sourceFormat}
+          usePace={usePace}
           onSplit={handleSplitLap}
           onMerge={handleMergeLaps}
           onRename={handleRenameLap}
@@ -763,6 +781,7 @@ export function GpxEditor({
           open={customizeOpen}
           onOpenChange={setCustomizeOpen}
           activityId={activityId}
+          usePace={usePace}
           allDefinitions={allDefinitions}
           activityColumns={activityColumns}
           builtinVisibility={builtinVisibility}

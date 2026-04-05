@@ -10,7 +10,13 @@ import {
 } from '@tanstack/react-table'
 import type { LapHandle } from '~/utils/dom-model'
 import type { Id } from '../../convex/_generated/dataModel'
-import { formatDistance, formatDuration, formatPace, formatSpeed } from '~/utils/gpx-parser'
+import {
+  formatDistance,
+  formatDuration,
+  formatPace,
+  formatAvgSpeed,
+  formatSpeed,
+} from '~/utils/gpx-parser'
 import type { ColumnDefinition, ActivityColumn, ColumnValue } from '~/utils/custom-columns'
 import {
   evaluateFormula,
@@ -60,6 +66,7 @@ export interface CustomColumnConfig {
 interface LapTableProps {
   laps: LapHandle[]
   sourceFormat: 'gpx' | 'tcx'
+  usePace: boolean
   onSplit: (lapId: string, pointIndices: number[]) => void
   onMerge: (lapIds: [string, string]) => void
   onRename: (lapId: string, newName: string) => void
@@ -161,6 +168,7 @@ function InlineNumberInput({
 export function LapTable({
   laps,
   sourceFormat,
+  usePace,
   onSplit,
   onMerge,
   onRename,
@@ -288,14 +296,22 @@ export function LapTable({
         id: 'pace',
         accessorFn: (row: LapHandle): number =>
           row.stats.duration > 0 && row.stats.distance > 0
-            ? row.stats.duration / (row.stats.distance / 1000)
-            : Infinity,
-        header: ({ column }) => <SortableHeader label={m.stat_pace()} column={column} />,
+            ? usePace
+              ? row.stats.duration / (row.stats.distance / 1000)
+              : row.stats.distance / row.stats.duration
+            : usePace
+              ? Infinity
+              : 0,
+        header: ({ column }) => (
+          <SortableHeader label={usePace ? m.stat_pace() : m.stat_avg_speed()} column={column} />
+        ),
         cell: (info) => {
           const lap = info.row.original
           return (
             <span className="tabular-nums">
-              {formatPace(lap.stats.distance, lap.stats.duration)}
+              {usePace
+                ? formatPace(lap.stats.distance, lap.stats.duration)
+                : formatAvgSpeed(lap.stats.distance, lap.stats.duration)}
             </span>
           )
         },
@@ -455,6 +471,7 @@ export function LapTable({
     ],
     [
       laps,
+      usePace,
       editingLapId,
       editName,
       startEditing,
@@ -621,7 +638,9 @@ export function LapTable({
                     content = formatDuration(totals.totalDuration)
                     break
                   case 'pace':
-                    content = formatPace(totals.totalDistance, totals.totalDuration)
+                    content = usePace
+                      ? formatPace(totals.totalDistance, totals.totalDuration)
+                      : formatAvgSpeed(totals.totalDistance, totals.totalDuration)
                     break
                   case 'avgHr':
                     content = totals.avgHr != null ? `${Math.round(totals.avgHr)}` : ''

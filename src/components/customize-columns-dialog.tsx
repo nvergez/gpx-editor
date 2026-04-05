@@ -51,6 +51,7 @@ interface CustomizeColumnsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   activityId: Id<'activities'>
+  usePace: boolean
   /** All column definitions owned by user */
   allDefinitions: ColumnDefinition[]
   /** Columns currently attached to this activity */
@@ -62,11 +63,11 @@ interface CustomizeColumnsDialogProps {
 
 type CreateMode = 'manual' | 'computed' | null
 
-function getBuiltinColumns() {
+function getBuiltinColumns(usePace: boolean) {
   return [
     { key: 'distance', label: m.stat_distance() },
     { key: 'duration', label: m.stat_duration() },
-    { key: 'pace', label: m.stat_pace() },
+    { key: 'pace', label: usePace ? m.stat_pace() : m.stat_avg_speed() },
     { key: 'avgHr', label: m.stat_avg_hr() },
     { key: 'maxHr', label: m.stat_max_hr() },
     { key: 'avgCadence', label: m.stat_cadence() },
@@ -83,6 +84,7 @@ export function CustomizeColumnsDialog({
   open,
   onOpenChange,
   activityId,
+  usePace,
   allDefinitions,
   activityColumns,
   builtinVisibility,
@@ -285,7 +287,7 @@ export function CustomizeColumnsDialog({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
               {m.columns_builtin()}
             </p>
-            {getBuiltinColumns().map((col) => (
+            {getBuiltinColumns(usePace).map((col) => (
               <label
                 key={col.key}
                 className="flex items-center justify-between py-1.5 px-1 rounded-md hover:bg-muted/50 cursor-pointer"

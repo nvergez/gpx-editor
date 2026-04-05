@@ -389,3 +389,8 @@ export function formatPace(meters: number, seconds: number): string {
 export function formatSpeed(ms: number): string {
   return `${(ms * 3.6).toFixed(1)} km/h`
 }
+
+export function formatAvgSpeed(meters: number, seconds: number): string {
+  if (meters <= 0 || seconds <= 0) return '-'
+  return formatSpeed(meters / seconds)
+}
