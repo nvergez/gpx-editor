@@ -86,7 +86,7 @@ function SortableHeader({
   const sorted = column.getIsSorted()
   return (
     <button
-      className="flex items-center gap-1.5 hover:text-foreground transition-colors text-xs uppercase tracking-wider font-medium"
+      className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors text-xs uppercase tracking-wider font-medium"
       onClick={() => column.toggleSorting()}
     >
       {label}
