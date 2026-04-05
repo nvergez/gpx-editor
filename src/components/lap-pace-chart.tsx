@@ -2,11 +2,12 @@ import { useMemo, useCallback, useRef, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import type { MouseHandlerDataParam } from 'recharts'
 import type { LapHandle } from '~/utils/dom-model'
-import { formatPace, formatDistance, formatDuration } from '~/utils/gpx-parser'
+import { formatPace, formatAvgSpeed, formatDistance, formatDuration } from '~/utils/gpx-parser'
 import * as m from '~/paraglide/messages.js'
 
 interface LapPaceChartProps {
   laps: LapHandle[]
+  usePace: boolean
   hoveredLapId: string | null
   onHoverLap: (lapId: string | null) => void
 }
@@ -16,7 +17,8 @@ interface BarData {
   lapId: string
   name: string
   pace: number // seconds per km (real value for tooltip)
-  barValue: number // inverted value for rendering (higher = faster)
+  speed: number // m/s (real value for tooltip in speed mode)
+  barValue: number // rendering value (higher = faster/higher)
   distance: number
   duration: number
   avgHr?: number
@@ -32,9 +34,11 @@ function paceTickFormatter(value: number): string {
 function CustomTooltip({
   active,
   payload,
+  usePace,
 }: {
   active?: boolean
   payload?: Array<{ payload: BarData }>
+  usePace: boolean
 }) {
   if (!active || !payload?.[0]) return null
   const data = payload[0].payload
@@ -44,9 +48,11 @@ function CustomTooltip({
       <div className="mt-1 space-y-0.5 text-muted-foreground">
         <p>
           <span className="text-foreground tabular-nums">
-            {formatPace(data.distance, data.duration)}
+            {usePace
+              ? formatPace(data.distance, data.duration)
+              : formatAvgSpeed(data.distance, data.duration)}
           </span>{' '}
-          {m.chart_pace()}
+          {usePace ? m.chart_pace() : m.chart_speed()}
         </p>
         <p>
           <span className="text-foreground tabular-nums">{formatDistance(data.distance)}</span>{' '}
@@ -73,18 +79,21 @@ function CustomTooltip({
   )
 }
 
-export function LapPaceChart({ laps, hoveredLapId, onHoverLap }: LapPaceChartProps) {
-  // Ceiling = slowest pace + padding. barValue = ceiling - pace, so faster = taller bar.
+export function LapPaceChart({ laps, usePace, hoveredLapId, onHoverLap }: LapPaceChartProps) {
+  // Pace mode: ceiling = slowest pace + padding, barValue = ceiling - pace (faster = taller)
+  // Speed mode: barValue = speed directly (faster = taller)
   const { barData, ceiling } = useMemo(() => {
     const raw = laps
       .map((lap, i) => {
         const { distance, duration, avgHr, elevationGain } = lap.stats
         const pace = distance > 0 && duration > 0 ? duration / (distance / 1000) : 0
+        const speed = distance > 0 && duration > 0 ? (distance / duration) * 3.6 : 0 // km/h
         return {
           index: i + 1,
           lapId: lap.id,
           name: lap.name,
           pace,
+          speed,
           distance,
           duration,
           avgHr,
@@ -93,22 +102,28 @@ export function LapPaceChart({ laps, hoveredLapId, onHoverLap }: LapPaceChartPro
       })
       .filter((d) => d.pace > 0)
 
-    if (raw.length === 0) return { barData: raw, ceiling: 600 }
+    if (raw.length === 0) return { barData: raw as BarData[], ceiling: 600 }
 
-    let minPace = Infinity
-    let maxPace = -Infinity
-    for (const d of raw) {
-      if (d.pace < minPace) minPace = d.pace
-      if (d.pace > maxPace) maxPace = d.pace
+    if (usePace) {
+      let minPace = Infinity
+      let maxPace = -Infinity
+      for (const d of raw) {
+        if (d.pace < minPace) minPace = d.pace
+        if (d.pace > maxPace) maxPace = d.pace
+      }
+      const padding = (maxPace - minPace) * 0.15 || 30
+      const ceil = maxPace + padding
+      return {
+        barData: raw.map((d) => ({ ...d, barValue: ceil - d.pace })),
+        ceiling: ceil,
+      }
+    } else {
+      return {
+        barData: raw.map((d) => ({ ...d, barValue: d.speed })),
+        ceiling: 0, // not used in speed mode
+      }
     }
-    const padding = (maxPace - minPace) * 0.15 || 30
-    const ceil = maxPace + padding
-
-    return {
-      barData: raw.map((d) => ({ ...d, barValue: ceil - d.pace })),
-      ceiling: ceil,
-    }
-  }, [laps])
+  }, [laps, usePace])
 
   const hoveredLapIdRef = useRef(hoveredLapId)
   useEffect(() => {
@@ -137,7 +152,7 @@ export function LapPaceChart({ laps, hoveredLapId, onHoverLap }: LapPaceChartPro
   return (
     <div className="rounded-xl border border-border/60 bg-card/80 p-3 sm:p-4">
       <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-        {m.chart_pace_per_lap()}
+        {usePace ? m.chart_pace_per_lap() : m.chart_speed_per_lap()}
       </p>
       <div className="-mx-3 sm:-mx-4 overflow-x-auto px-3 sm:px-4">
         <div style={{ minWidth: chartMinWidth }}>
@@ -156,13 +171,17 @@ export function LapPaceChart({ laps, hoveredLapId, onHoverLap }: LapPaceChartPro
               />
               <YAxis
                 domain={[0, 'dataMax']}
-                tickFormatter={(value: number) => paceTickFormatter(ceiling - value)}
+                tickFormatter={
+                  usePace
+                    ? (value: number) => paceTickFormatter(ceiling - value)
+                    : (value: number) => `${value.toFixed(0)}`
+                }
                 tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                 tickLine={false}
                 axisLine={false}
                 width={48}
               />
-              <Tooltip content={<CustomTooltip />} cursor={false} />
+              <Tooltip content={<CustomTooltip usePace={usePace} />} cursor={false} />
               <Bar dataKey="barValue" radius={[3, 3, 0, 0]} maxBarSize={64}>
                 {barData.map((entry) => (
                   <Cell
