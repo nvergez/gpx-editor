@@ -13,6 +13,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StravaCallbackRouteImport } from './routes/strava/callback'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ActivitiesSlugRouteImport } from './routes/activities/$slug'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const StravaCallbackRoute = StravaCallbackRouteImport.update({
   id: '/strava/callback',
   path: '/strava/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/activities/$slug': typeof ActivitiesSlugRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/strava/callback': typeof StravaCallbackRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/admin-plan': typeof ApiStripeAdminPlanRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/activities/$slug': typeof ActivitiesSlugRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/strava/callback': typeof StravaCallbackRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/admin-plan': typeof ApiStripeAdminPlanRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/activities/$slug': typeof ActivitiesSlugRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/strava/callback': typeof StravaCallbackRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/admin-plan': typeof ApiStripeAdminPlanRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/activities/$slug'
     | '/api/chat'
+    | '/api/health'
     | '/strava/callback'
     | '/api/auth/$'
     | '/api/stripe/admin-plan'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/activities/$slug'
     | '/api/chat'
+    | '/api/health'
     | '/strava/callback'
     | '/api/auth/$'
     | '/api/stripe/admin-plan'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/activities/$slug'
     | '/api/chat'
+    | '/api/health'
     | '/strava/callback'
     | '/api/auth/$'
     | '/api/stripe/admin-plan'
@@ -165,6 +177,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ActivitiesSlugRoute: typeof ActivitiesSlugRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   StravaCallbackRoute: typeof StravaCallbackRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStripeAdminPlanRoute: typeof ApiStripeAdminPlanRoute
@@ -201,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/strava/callback'
       fullPath: '/strava/callback'
       preLoaderRoute: typeof StravaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -261,6 +281,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ActivitiesSlugRoute: ActivitiesSlugRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiHealthRoute: ApiHealthRoute,
   StravaCallbackRoute: StravaCallbackRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStripeAdminPlanRoute: ApiStripeAdminPlanRoute,

@@ -3,6 +3,8 @@ import { streamText, convertToModelMessages, stepCountIs } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { activityTools } from '~/lib/tools/activity-tools'
 import { fetchAuthQuery, fetchAuthMutation } from '~/lib/auth-server'
+import { logger } from '~/utils/logger'
+import { reportError, toError } from '~/utils/error-reporter'
 import { api } from '../../../convex/_generated/api'
 
 // ---------------------------------------------------------------------------
@@ -29,46 +31,67 @@ export const Route = createFileRoute('/api/chat')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        // 1. Check credits
-        const balance = await fetchAuthQuery(api.credits.getBalance)
-        if (!balance) {
-          return Response.json({ error: 'Not authenticated' }, { status: 401 })
-        }
-        if (balance.total <= 0) {
-          return Response.json({ error: 'No credits remaining' }, { status: 403 })
-        }
+        const startTime = Date.now()
 
-        const { messages, activityContext } = await request.json()
-        const systemPrompt = buildSystemPrompt(activityContext)
+        try {
+          // 1. Check credits
+          const balance = await fetchAuthQuery(api.credits.getBalance)
+          if (!balance) {
+            return Response.json({ error: 'Not authenticated' }, { status: 401 })
+          }
+          if (balance.total <= 0) {
+            return Response.json({ error: 'No credits remaining' }, { status: 403 })
+          }
 
-        // 2. Stream the response, deduct credits when done
-        const result = streamText({
-          model: openai('gpt-5.4-mini'),
-          system: systemPrompt,
-          messages: await convertToModelMessages(messages),
-          tools: activityTools,
-          stopWhen: stepCountIs(10),
-          onFinish: async ({ toolCalls }) => {
-            let cost = BASE_MESSAGE_COST
-            for (const tc of toolCalls) {
-              cost += TOOL_COSTS[tc.toolName] ?? 1
-            }
+          const { messages, activityContext } = await request.json()
+          const systemPrompt = buildSystemPrompt(activityContext)
 
-            const toolSummary =
-              toolCalls.length > 0 ? ` + ${toolCalls.map((tc) => tc.toolName).join(', ')}` : ''
+          logger.info('Chat request started', {
+            lapCount: activityContext?.laps?.length,
+            messageCount: messages?.length,
+          })
 
-            try {
-              await fetchAuthMutation(api.credits.deductMyCredits, {
-                amount: cost,
-                metadata: `chat turn${toolSummary}`,
+          // 2. Stream the response, deduct credits when done
+          const result = streamText({
+            model: openai('gpt-5.4-mini'),
+            system: systemPrompt,
+            messages: await convertToModelMessages(messages),
+            tools: activityTools,
+            stopWhen: stepCountIs(10),
+            onFinish: async ({ toolCalls }) => {
+              let cost = BASE_MESSAGE_COST
+              for (const tc of toolCalls) {
+                cost += TOOL_COSTS[tc.toolName] ?? 1
+              }
+
+              const toolSummary =
+                toolCalls.length > 0 ? ` + ${toolCalls.map((tc) => tc.toolName).join(', ')}` : ''
+
+              logger.info('Chat stream completed', {
+                durationMs: Date.now() - startTime,
+                toolCalls: toolCalls.map((tc) => tc.toolName),
+                creditCost: cost,
               })
-            } catch (err) {
-              console.error('Failed to deduct credits:', err)
-            }
-          },
-        })
 
-        return result.toUIMessageStreamResponse()
+              try {
+                await fetchAuthMutation(api.credits.deductMyCredits, {
+                  amount: cost,
+                  metadata: `chat turn${toolSummary}`,
+                })
+              } catch (err) {
+                reportError(toError(err), { context: 'credit-deduction' })
+              }
+            },
+          })
+
+          return result.toUIMessageStreamResponse()
+        } catch (err) {
+          const duration = Date.now() - startTime
+
+          reportError(toError(err), { context: 'chat-api', durationMs: duration })
+
+          return Response.json({ error: 'Internal server error' }, { status: 500 })
+        }
       },
     },
   },
