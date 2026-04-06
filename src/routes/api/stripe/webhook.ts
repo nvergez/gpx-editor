@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import Stripe from 'stripe'
 import { getStripe, getConvexWebhookSecret } from '~/lib/stripe'
 import { getConvexClient } from '~/lib/convex-server'
+import { logger } from '~/utils/logger'
+import { reportError, toError } from '~/utils/error-reporter'
 import { api } from '../../../../convex/_generated/api'
 
 function getWebhookSecret(): string {
@@ -14,6 +16,7 @@ export const Route = createFileRoute('/api/stripe/webhook')({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const startTime = Date.now()
         const stripe = getStripe()
         const body = await request.text()
         const sig = request.headers.get('stripe-signature')
@@ -26,10 +29,14 @@ export const Route = createFileRoute('/api/stripe/webhook')({
         try {
           event = stripe.webhooks.constructEvent(body, sig, getWebhookSecret())
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Unknown error'
-          console.error('Stripe webhook signature verification failed:', message)
-          return new Response(`Webhook signature verification failed: ${message}`, { status: 400 })
+          const error = toError(err)
+          reportError(error, { context: 'stripe-webhook-signature' })
+          return new Response(`Webhook signature verification failed: ${error.message}`, {
+            status: 400,
+          })
         }
+
+        logger.info('Stripe webhook received', { eventType: event.type, eventId: event.id })
 
         const convex = getConvexClient()
         const webhookSecret = getConvexWebhookSecret()
@@ -52,12 +59,22 @@ export const Route = createFileRoute('/api/stripe/webhook')({
             }
 
             default:
-              console.log(`Unhandled Stripe event type: ${event.type}`)
+              logger.info('Unhandled Stripe event type', { eventType: event.type })
           }
         } catch (err) {
-          console.error(`Error processing Stripe event ${event.type}:`, err)
+          const duration = Date.now() - startTime
+          reportError(toError(err), {
+            context: 'stripe-webhook',
+            eventType: event.type,
+            durationMs: duration,
+          })
           return new Response('Webhook processing error', { status: 500 })
         }
+
+        logger.info('Stripe webhook processed', {
+          eventType: event.type,
+          durationMs: Date.now() - startTime,
+        })
 
         return new Response('ok', { status: 200 })
       },
@@ -76,7 +93,7 @@ async function handleCheckoutCompleted(
 ) {
   const tokenIdentifier = session.metadata?.tokenIdentifier
   if (!tokenIdentifier) {
-    console.error('checkout.session.completed: missing tokenIdentifier in metadata')
+    logger.error('checkout.session.completed: missing tokenIdentifier in metadata')
     return
   }
 
@@ -89,7 +106,7 @@ async function handleCheckoutCompleted(
       typeof session.subscription === 'string' ? session.subscription : session.subscription?.id
 
     if (!customerId || !subscriptionId) {
-      console.error('checkout.session.completed: missing customer or subscription ID')
+      logger.error('checkout.session.completed: missing customer or subscription ID')
       return
     }
 
@@ -100,11 +117,11 @@ async function handleCheckoutCompleted(
       stripeSubscriptionId: subscriptionId,
     })
 
-    console.log(`Subscription created for ${tokenIdentifier}`)
+    logger.info('Subscription created', { tokenIdentifier })
   } else if (type === 'credit_pack') {
     const credits = Number(session.metadata?.credits)
     if (!credits || credits <= 0) {
-      console.error('checkout.session.completed: invalid credits in metadata')
+      logger.error('checkout.session.completed: invalid credits in metadata')
       return
     }
 
@@ -115,7 +132,7 @@ async function handleCheckoutCompleted(
       checkoutSessionId: session.id,
     })
 
-    console.log(`Credit pack purchased: ${credits} credits for ${tokenIdentifier}`)
+    logger.info('Credit pack purchased', { credits, tokenIdentifier })
   }
 }
 
@@ -132,7 +149,7 @@ async function handleInvoicePaid(
   const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
 
   if (!customerId) {
-    console.error('invoice.paid: missing customer ID')
+    logger.error('invoice.paid: missing customer ID')
     return
   }
 
@@ -141,7 +158,7 @@ async function handleInvoicePaid(
     stripeCustomerId: customerId,
   })
 
-  console.log(`Invoice paid (renewal) for Stripe customer ${customerId}`)
+  logger.info('Invoice paid (renewal)', { customerId })
 }
 
 async function handleSubscriptionDeleted(
@@ -153,7 +170,7 @@ async function handleSubscriptionDeleted(
     typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id
 
   if (!customerId) {
-    console.error('customer.subscription.deleted: missing customer ID')
+    logger.error('customer.subscription.deleted: missing customer ID')
     return
   }
 
@@ -162,5 +179,5 @@ async function handleSubscriptionDeleted(
     stripeCustomerId: customerId,
   })
 
-  console.log(`Subscription deleted for Stripe customer ${customerId}`)
+  logger.info('Subscription deleted', { customerId })
 }

@@ -1,4 +1,8 @@
 /// <reference types="vite/client" />
+import { initSentryClient } from '~/lib/sentry-client'
+
+initSentryClient()
+
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import type { ConvexQueryClient } from '@convex-dev/react-query'
 import type { QueryClient } from '@tanstack/react-query'
