@@ -27,7 +27,13 @@ export const BUILTIN_OPERANDS: { key: keyof LapStats; label: string; unit: strin
   { key: 'elevationLoss', label: 'Elev Loss', unit: 'm' },
 ]
 
-export const FORMULA_OPERATORS: { value: FormulaOperator; label: string; symbol: string }[] = [
+export type FormulaOperatorSymbol = '/' | '×' | '+' | '−'
+
+export const FORMULA_OPERATORS: {
+  value: FormulaOperator
+  label: string
+  symbol: FormulaOperatorSymbol
+}[] = [
   { value: 'divide', label: 'A / B', symbol: '/' },
   { value: 'divideby', label: 'B / A', symbol: '/' },
   { value: 'multiply', label: 'A × B', symbol: '×' },
@@ -35,26 +41,21 @@ export const FORMULA_OPERATORS: { value: FormulaOperator; label: string; symbol:
   { value: 'subtract', label: 'A − B', symbol: '−' },
 ]
 
-/** Evaluate a formula for a single lap */
-export function evaluateFormula(
-  formula: Formula,
+export function resolveOperand(
+  operand: string,
   stats: LapStats,
   manualValues: Map<string, number>,
 ): number | undefined {
-  const resolve = (operand: string): number | undefined => {
-    // Check if it's a built-in stat key
-    if (operand in stats) {
-      return stats[operand as keyof LapStats]
-    }
-    // Otherwise it's a manual column ID
-    return manualValues.get(operand)
-  }
+  if (operand in stats) return stats[operand as keyof LapStats]
+  return manualValues.get(operand)
+}
 
-  const a = resolve(formula.left)
-  const b = resolve(formula.right)
-  if (a == null || b == null) return undefined
-
-  switch (formula.operator) {
+export function applyFormulaOperator(
+  operator: FormulaOperator,
+  a: number,
+  b: number,
+): number | undefined {
+  switch (operator) {
     case 'divide':
       return b !== 0 ? a / b : undefined
     case 'divideby':
@@ -66,6 +67,18 @@ export function evaluateFormula(
     case 'subtract':
       return a - b
   }
+}
+
+/** Evaluate a formula for a single lap */
+export function evaluateFormula(
+  formula: Formula,
+  stats: LapStats,
+  manualValues: Map<string, number>,
+): number | undefined {
+  const a = resolveOperand(formula.left, stats, manualValues)
+  const b = resolveOperand(formula.right, stats, manualValues)
+  if (a == null || b == null) return undefined
+  return applyFormulaOperator(formula.operator, a, b)
 }
 
 /** Get operand choices for formula builder (built-in stats + manual custom columns) */

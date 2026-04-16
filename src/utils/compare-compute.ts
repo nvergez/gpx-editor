@@ -1,5 +1,5 @@
 import { parseToDocument, getLapHandles } from './dom-operations'
-import { evaluateFormula, type Formula } from './custom-columns'
+import { applyFormulaOperator, resolveOperand, type Formula } from './custom-columns'
 import type { ComparisonActivityPoint, ComputedActivityInput } from '../../convex/comparisons'
 
 /**
@@ -39,18 +39,37 @@ export async function computeComparisonPoints(
       }
 
       const values: number[] = []
+      const weightDistance: number[] = []
+      const weightDuration: number[] = []
+      const leftOperand: number[] = []
+      const rightOperand: number[] = []
+      // `divideby` is B/A — swap operand arrays so tooltip labels (also swapped
+      // in the route) pair consistently with the values shown.
+      const swapForDisplay = formula.operator === 'divideby'
       for (const lap of laps) {
         const manualValues = manualPerLap.get(lap.id) ?? new Map<string, number>()
-        const v = evaluateFormula(formula, lap.stats, manualValues)
-        if (v != null && Number.isFinite(v)) values.push(v)
+        const a = resolveOperand(formula.left, lap.stats, manualValues)
+        const b = resolveOperand(formula.right, lap.stats, manualValues)
+        if (a == null || b == null) continue
+        const v = applyFormulaOperator(formula.operator, a, b)
+        if (v == null || !Number.isFinite(v)) continue
+        values.push(v)
+        weightDistance.push(lap.stats.distance)
+        weightDuration.push(lap.stats.duration)
+        leftOperand.push(swapForDisplay ? b : a)
+        rightOperand.push(swapForDisplay ? a : b)
       }
 
       if (values.length === 0) return null
 
-      return { activity: input.activity, values }
+      return {
+        activity: input.activity,
+        values,
+        weights: { distance: weightDistance, duration: weightDuration },
+        operandValues: { left: leftOperand, right: rightOperand },
+      }
     }),
   )
 
-  // Server already returns inputs sorted by activity date; Promise.all preserves order.
   return results.filter((p): p is ComparisonActivityPoint => p !== null)
 }

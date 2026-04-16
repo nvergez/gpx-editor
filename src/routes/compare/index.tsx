@@ -16,18 +16,28 @@ import { Label } from '~/components/ui/label'
 import { BarChart3, Info, TrendingUp } from 'lucide-react'
 import { sportIcon, formatActivityDate } from '~/utils/activity-formatting'
 import { formatDistance } from '~/utils/gpx-parser'
-import { CompareChart, getAggregationLabel, type Aggregation } from '~/components/compare-chart'
+import {
+  ALL_AGGREGATIONS,
+  CompareChart,
+  getAggregationLabel,
+  isWeightedAggregation,
+  type Aggregation,
+  type OperandDisplay,
+  type ViewMode,
+} from '~/components/compare-chart'
 import { computeComparisonPoints } from '~/utils/compare-compute'
+import { BUILTIN_OPERANDS, FORMULA_OPERATORS } from '~/utils/custom-columns'
 import * as m from '~/paraglide/messages.js'
 
 const MAX_ACTIVITIES = 10
-const AGGREGATIONS: Aggregation[] = ['median', 'mean', 'min', 'max']
+const VIEW_MODES: ViewMode[] = ['aggregate', 'distribution']
 
 type CompareSearch = {
   columnId?: Id<'columnDefinitions'>
   activityIds?: Id<'activities'>[]
   aggregation?: Aggregation
   showBand?: boolean
+  viewMode?: ViewMode
 }
 
 export const Route = createFileRoute('/compare/')({
@@ -37,7 +47,7 @@ export const Route = createFileRoute('/compare/')({
     const activityIds = Array.isArray(search.activityIds)
       ? (search.activityIds.filter((v): v is string => typeof v === 'string') as Id<'activities'>[])
       : undefined
-    const aggregation = AGGREGATIONS.includes(search.aggregation as Aggregation)
+    const aggregation = ALL_AGGREGATIONS.includes(search.aggregation as Aggregation)
       ? (search.aggregation as Aggregation)
       : undefined
     const showBand =
@@ -46,7 +56,10 @@ export const Route = createFileRoute('/compare/')({
         : search.showBand === false || search.showBand === 'false'
           ? false
           : undefined
-    return { columnId, activityIds, aggregation, showBand }
+    const viewMode = VIEW_MODES.includes(search.viewMode as ViewMode)
+      ? (search.viewMode as ViewMode)
+      : undefined
+    return { columnId, activityIds, aggregation, showBand, viewMode }
   },
   component: ComparePage,
 })
@@ -55,8 +68,9 @@ function ComparePage() {
   const search = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
 
-  const aggregation: Aggregation = search.aggregation ?? 'median'
+  const rawAggregation: Aggregation = search.aggregation ?? 'median'
   const showBand = search.showBand ?? true
+  const viewMode: ViewMode = search.viewMode ?? 'aggregate'
 
   const { data: columns } = useQuery(convexQuery(api.comparisons.listComparableColumns, {}))
   const { data: eligibleActivities } = useQuery({
@@ -80,7 +94,11 @@ function ComparePage() {
   const isComputed = selectedColumn?.type === 'computed'
   const enabledBase = !!search.columnId && selectedActivityIds.length >= 2
 
-  // Manual path: values live in columnValues, aggregated per-activity in Convex.
+  // Weighted aggregations rely on per-lap distance/duration from the XML,
+  // which we only have for computed columns. Fall back to median for manual.
+  const aggregation: Aggregation =
+    !isComputed && isWeightedAggregation(rawAggregation) ? 'median' : rawAggregation
+
   const manualQuery = useQuery({
     ...convexQuery(api.comparisons.getComparisonData, {
       columnId: search.columnId,
@@ -89,8 +107,6 @@ function ComparePage() {
     enabled: enabledBase && !isComputed,
   })
 
-  // Computed path: get inputs from Convex (xml urls + operand manual values),
-  // then download XMLs + evaluate formula per lap client-side.
   const computedInputsQuery = useQuery({
     ...convexQuery(api.comparisons.getComputedComparisonInputs, {
       columnId: search.columnId,
@@ -108,6 +124,32 @@ function ComparePage() {
     },
     enabled: isComputed && !!computedInputsQuery.data?.column?.formula,
   })
+
+  const operandDisplay: OperandDisplay | undefined = useMemo(() => {
+    const column = computedInputsQuery.data?.column
+    if (!isComputed || !column?.formula) return undefined
+    const names = column.manualOperandNames ?? {}
+    const resolveLabel = (operand: string): string => {
+      const builtin = BUILTIN_OPERANDS.find((b) => b.key === operand)
+      if (builtin) return builtin.label
+      return names[operand] ?? operand
+    }
+    const operatorSymbol = FORMULA_OPERATORS.find(
+      (o) => o.value === column.formula!.operator,
+    )?.symbol
+    if (!operatorSymbol) return undefined
+    const { operator } = column.formula
+    // `divideby` means B/A — swap operand labels so the tooltip reads naturally.
+    const [leftOperand, rightOperand] =
+      operator === 'divideby'
+        ? [column.formula.right, column.formula.left]
+        : [column.formula.left, column.formula.right]
+    return {
+      operator: operatorSymbol,
+      leftLabel: resolveLabel(leftOperand),
+      rightLabel: resolveLabel(rightOperand),
+    }
+  }, [computedInputsQuery.data?.column, isComputed])
 
   const handleColumnChange = useCallback(
     (value: string | null) => {
@@ -157,6 +199,16 @@ function ComparePage() {
     (checked: boolean) => {
       navigate({
         search: (prev) => ({ ...prev, showBand: checked }),
+      })
+    },
+    [navigate],
+  )
+
+  const handleViewModeChange = useCallback(
+    (value: ViewMode | null) => {
+      if (!value) return
+      navigate({
+        search: (prev) => ({ ...prev, viewMode: value }),
       })
     },
     [navigate],
@@ -286,27 +338,60 @@ function ComparePage() {
               <section className="space-y-4">
                 <div>
                   <Label className="mb-2 block text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                    {m.compare_aggregation_label()}
+                    {m.compare_view_label()}
                   </Label>
-                  <Select value={aggregation} onValueChange={handleAggregationChange}>
+                  <Select value={viewMode} onValueChange={handleViewModeChange}>
                     <SelectTrigger className="w-full">
-                      <SelectValue>{getAggregationLabel(aggregation)}</SelectValue>
+                      <SelectValue>
+                        {viewMode === 'distribution'
+                          ? m.compare_view_distribution()
+                          : m.compare_view_aggregate()}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="median">{m.compare_aggregation_median()}</SelectItem>
-                      <SelectItem value="mean">{m.compare_aggregation_mean()}</SelectItem>
-                      <SelectItem value="min">{m.compare_aggregation_min()}</SelectItem>
-                      <SelectItem value="max">{m.compare_aggregation_max()}</SelectItem>
+                      <SelectItem value="aggregate">{m.compare_view_aggregate()}</SelectItem>
+                      <SelectItem value="distribution">{m.compare_view_distribution()}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
-                  <Label htmlFor="show-band" className="text-sm text-foreground">
-                    {m.compare_show_band()}
-                  </Label>
-                  <Switch id="show-band" checked={showBand} onCheckedChange={handleToggleBand} />
-                </div>
+                {viewMode === 'aggregate' && (
+                  <div>
+                    <Label className="mb-2 block text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                      {m.compare_aggregation_label()}
+                    </Label>
+                    <Select value={aggregation} onValueChange={handleAggregationChange}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>{getAggregationLabel(aggregation)}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="median">{m.compare_aggregation_median()}</SelectItem>
+                        <SelectItem value="mean">{m.compare_aggregation_mean()}</SelectItem>
+                        <SelectItem value="min">{m.compare_aggregation_min()}</SelectItem>
+                        <SelectItem value="max">{m.compare_aggregation_max()}</SelectItem>
+                        {isComputed && (
+                          <>
+                            <SelectItem value="weighted_distance">
+                              {m.compare_aggregation_weighted_distance()}
+                            </SelectItem>
+                            <SelectItem value="weighted_duration">
+                              {m.compare_aggregation_weighted_duration()}
+                            </SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {viewMode === 'aggregate' && (
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="show-band" className="text-sm text-foreground">
+                      {m.compare_show_band()}
+                    </Label>
+                    <Switch id="show-band" checked={showBand} onCheckedChange={handleToggleBand} />
+                  </div>
+                )}
               </section>
             )}
           </aside>
@@ -333,6 +418,8 @@ function ComparePage() {
                 aggregation={aggregation}
                 showBand={showBand}
                 columnName={selectedColumn?.name ?? ''}
+                viewMode={viewMode}
+                operandDisplay={operandDisplay}
               />
             )}
           </main>

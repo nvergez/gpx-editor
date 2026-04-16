@@ -117,6 +117,8 @@ export type ComparisonActivityPoint = {
     activityDate?: string
   }
   values: number[]
+  weights?: { distance: number[]; duration: number[] }
+  operandValues?: { left: number[]; right: number[] }
 }
 
 export const getComparisonData = query({
@@ -220,6 +222,7 @@ export const getComputedComparisonInputs = query({
         left: string
         right: string
       }
+      manualOperandNames?: Record<string, string>
     } | null
     activities: ComputedActivityInput[]
   }> => {
@@ -244,8 +247,12 @@ export const getComputedComparisonInputs = query({
 
     const operandDocs = await Promise.all(normalizedOperands.map((id) => ctx.db.get(id)))
     const operandColumnIds = new Set<Id<'columnDefinitions'>>()
+    const manualOperandNames: Record<string, string> = {}
     for (const doc of operandDocs) {
-      if (doc && doc.tokenIdentifier === identity.tokenIdentifier) operandColumnIds.add(doc._id)
+      if (doc && doc.tokenIdentifier === identity.tokenIdentifier) {
+        operandColumnIds.add(doc._id)
+        manualOperandNames[doc._id] = doc.name
+      }
     }
 
     const fetched = await Promise.all(
@@ -297,6 +304,7 @@ export const getComputedComparisonInputs = query({
         name: def.name,
         type: def.type,
         formula,
+        manualOperandNames,
       },
       activities,
     }
