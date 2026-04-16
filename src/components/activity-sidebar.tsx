@@ -21,6 +21,7 @@ import {
   Sparkles,
   Zap,
   Shield,
+  TrendingUp,
 } from 'lucide-react'
 import { formatDistance, formatDuration } from '~/utils/gpx-parser'
 import { sportIcon, formatActivityDate } from '~/utils/activity-formatting'
@@ -65,6 +66,7 @@ export function ActivitySidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const slugMatch = pathname.match(/^\/activities\/([^/]+)/)
   const currentSlug = slugMatch?.[1]
+  const isOnCompare = pathname.startsWith('/compare')
 
   // Close mobile sidebar on navigation
   useEffect(() => {
@@ -193,6 +195,12 @@ export function ActivitySidebar() {
                   <SidebarMenuButton isActive={isOnHome} render={<Link to="/" />}>
                     <Plus className="size-4" />
                     <span>{m.sidebar_import_activity()}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton isActive={isOnCompare} render={<Link to="/compare" />}>
+                    <TrendingUp className="size-4" />
+                    <span>{m.sidebar_compare()}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

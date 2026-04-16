@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CompareIndexRouteImport } from './routes/compare/index'
 import { Route as StravaCallbackRouteImport } from './routes/strava/callback'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
@@ -35,6 +36,11 @@ const AdminRoute = AdminRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareIndexRoute = CompareIndexRouteImport.update({
+  id: '/compare/',
+  path: '/compare/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StravaCallbackRoute = StravaCallbackRouteImport.update({
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/strava/callback': typeof StravaCallbackRoute
+  '/compare/': typeof CompareIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/admin-plan': typeof ApiStripeAdminPlanRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/strava/callback': typeof StravaCallbackRoute
+  '/compare': typeof CompareIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/admin-plan': typeof ApiStripeAdminPlanRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/strava/callback': typeof StravaCallbackRoute
+  '/compare/': typeof CompareIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/admin-plan': typeof ApiStripeAdminPlanRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/health'
     | '/strava/callback'
+    | '/compare/'
     | '/api/auth/$'
     | '/api/stripe/admin-plan'
     | '/api/stripe/checkout'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/health'
     | '/strava/callback'
+    | '/compare'
     | '/api/auth/$'
     | '/api/stripe/admin-plan'
     | '/api/stripe/checkout'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/health'
     | '/strava/callback'
+    | '/compare/'
     | '/api/auth/$'
     | '/api/stripe/admin-plan'
     | '/api/stripe/checkout'
@@ -179,6 +191,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiHealthRoute: typeof ApiHealthRoute
   StravaCallbackRoute: typeof StravaCallbackRoute
+  CompareIndexRoute: typeof CompareIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStripeAdminPlanRoute: typeof ApiStripeAdminPlanRoute
   ApiStripeCheckoutRoute: typeof ApiStripeCheckoutRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare/': {
+      id: '/compare/'
+      path: '/compare'
+      fullPath: '/compare/'
+      preLoaderRoute: typeof CompareIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/strava/callback': {
@@ -283,6 +303,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   ApiHealthRoute: ApiHealthRoute,
   StravaCallbackRoute: StravaCallbackRoute,
+  CompareIndexRoute: CompareIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStripeAdminPlanRoute: ApiStripeAdminPlanRoute,
   ApiStripeCheckoutRoute: ApiStripeCheckoutRoute,

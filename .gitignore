@@ -21,6 +21,7 @@ yarn.lock
 /playwright/.cache/
 .tanstack
 src/paraglide/
+.context/
 
 *.gpx
 *.tcx
