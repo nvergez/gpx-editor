@@ -25,6 +25,10 @@ export function createAuthOptions(): BetterAuthOptions {
       enabled: true,
       requireEmailVerification: false,
     },
+    session: {
+      expiresIn: 60 * 60 * 24 * 30, // 30 days
+      updateAge: 60 * 60 * 24, // refresh if last update > 1 day ago
+    },
     plugins: [admin(), convex({ authConfig })],
   }
 }
